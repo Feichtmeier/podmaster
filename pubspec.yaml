@@ -1,0 +1,96 @@
+name: podmaster
+description: "A new Flutter project."
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  audio_metadata_reader: ^1.4.2
+  audio_service: ^0.18.12
+  audio_service_mpris:
+    git:
+      url: https://github.com/Feichtmeier/audio-service-mpris
+      ref: ad6f743b73e320670449026fa1852d9978438bb9
+  cached_network_image: ^3.4.1
+  collection: ^1.19.1
+  command_it: ^8.0.0
+  custom_adaptive_scaffold: ^2.0.2
+  dio: ^5.7.0
+  file: ^7.0.1
+  flutter:
+    sdk: flutter
+  flutter_cache_manager: ^3.4.1
+  flutter_localizations:
+    sdk: flutter
+  future_loading_dialog: ^0.3.0
+  html: ^0.15.6
+  listen_it: ^5.3.3
+  local_notifier: ^0.1.6
+  media_kit:
+    git:
+      url: https://github.com/media-kit/media-kit
+      path: media_kit
+  media_kit_libs_video:
+    git:
+      url: https://github.com/media-kit/media-kit
+      path: libs/universal/media_kit_libs_video
+  media_kit_video:
+    git:
+      url: https://github.com/media-kit/media-kit
+      path: media_kit_video
+  mime: ^2.0.0
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  phoenix_theme:
+    git:
+      url: https://github.com/ubuntu-flutter-community/phoenix_theme
+      ref: 7d22aba2841e522bf4c140e60e4a60f33c8f5aa6
+  podcast_search: ^0.7.12
+  radio_browser_api: ^2.0.0+1
+  safe_change_notifier: ^0.4.0+1
+  shared_preferences: ^2.5.3
+  system_theme: ^3.1.2
+  url_launcher: ^6.3.2
+  watch_it: ^2.0.1
+  window_manager: ^0.5.1
+  xdg_directories: ^1.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+flutter_launcher_icons:
+  android: false
+  ios: false
+  image_path: "assets/podmaster.png"
+  macos:
+    generate: true
+    image_path: "assets/podmaster.png"
+
+dependency_overrides:
+  media_kit:
+    git:
+      url: https://github.com/media-kit/media-kit
+      path: media_kit
+      ref: d310049f24196250d876efb02b9ff56fa9ef5068
+  media_kit_libs_video:
+    git:
+      url: https://github.com/media-kit/media-kit
+      path: libs/universal/media_kit_libs_video
+      ref: d310049f24196250d876efb02b9ff56fa9ef5068
+  media_kit_video:
+    git:
+      url: https://github.com/media-kit/media-kit
+      path: media_kit_video
+      ref: d310049f24196250d876efb02b9ff56fa9ef5068
+
+assets:
+  - assets/podmaster.png
