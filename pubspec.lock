@@ -155,7 +155,7 @@ packages:
     source: hosted
     version: "1.19.1"
   command_it:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: command_it
       sha256: c2a658f52219bb082e283b4177870e8875bf056aaeb8d2737e20e285647fcf21
@@ -271,6 +271,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.1"
+  flutter_it:
+    dependency: "direct main"
+    description:
+      name: flutter_it
+      sha256: "6afd345b1db30209a80e29e9e7fb0e58fffe3f46a5c04329d84e0f97323c98d7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -407,7 +415,7 @@ packages:
     source: hosted
     version: "5.1.1"
   listen_it:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: listen_it
       sha256: "516bfd486ca6fcb5d73c5640ed59e3c281a2871ee11863ffd4713e581b11c8d0"
@@ -1072,7 +1080,7 @@ packages:
     source: hosted
     version: "1.3.0"
   watch_it:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: watch_it
       sha256: f2b5e05736640b07f6c5a8bd5421d71504439a6c547c67da9172f910999a249f

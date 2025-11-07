@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:watch_it/watch_it.dart';
+import 'package:flutter_it/flutter_it.dart';
 
 import '../../app/app.dart';
 import '../../app/home.dart';

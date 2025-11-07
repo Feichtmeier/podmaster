@@ -6,7 +6,7 @@ import 'package:file/local.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:path/path.dart' as p;
-import 'package:podmaster/common/platforms.dart';
+import '../platforms.dart';
 import 'package:xdg_directories/xdg_directories.dart';
 
 import '../../extensions/build_context_x.dart';

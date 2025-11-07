@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:listen_it/listen_it.dart';
+import 'package:flutter_it/flutter_it.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:watch_it/watch_it.dart';
 
 import '../../common/view/theme.dart';
 import '../../common/view/ui_constants.dart';
@@ -94,25 +93,25 @@ class PlayerFullView extends StatelessWidget
             AppBar(
               title: Text('Media Player', style: TextStyle(color: iconColor)),
               backgroundColor: Colors.transparent,
-
+              automaticallyImplyLeading: false,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_downward, color: iconColor),
+                onPressed: () => togglePlayerFullMode(context),
+              ),
               actions: [
-                IconButton(
-                  isSelected: showPlayerExplorer,
-                  icon: Icon(
-                    showPlayerExplorer
-                        ? Icons.queue_music_outlined
-                        : Icons.queue_music,
-                    color: iconColor,
-                  ),
-                  onPressed: () => di<PlayerManager>().updateState(
-                    showPlayerExplorer: !showPlayerExplorer,
-                  ),
-                ),
                 Padding(
-                  padding: const EdgeInsets.all(kSmallPadding),
+                  padding: const EdgeInsets.all(8.0),
                   child: IconButton(
-                    icon: Icon(Icons.arrow_downward, color: iconColor),
-                    onPressed: () => togglePlayerFullMode(context),
+                    isSelected: showPlayerExplorer,
+                    icon: Icon(
+                      showPlayerExplorer
+                          ? Icons.queue_music_outlined
+                          : Icons.queue_music,
+                      color: iconColor,
+                    ),
+                    onPressed: () => di<PlayerManager>().updateState(
+                      showPlayerExplorer: !showPlayerExplorer,
+                    ),
                   ),
                 ),
               ],

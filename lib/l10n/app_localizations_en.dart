@@ -474,4 +474,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get oopsSomethingWentWrong => 'Oops! Something went wrong.';
+
+  @override
+  String get collection => 'Collection';
 }

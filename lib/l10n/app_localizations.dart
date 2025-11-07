@@ -1011,6 +1011,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Oops! Something went wrong.'**
   String get oopsSomethingWentWrong;
+
+  /// No description provided for @collection.
+  ///
+  /// In en, this message translates to:
+  /// **'Collection'**
+  String get collection;
 }
 
 class _AppLocalizationsDelegate

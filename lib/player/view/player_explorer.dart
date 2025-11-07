@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
+import '../../podcasts/view/podcast_collection_view.dart';
+import '../../podcasts/view/podcast_search_view.dart';
 import 'player_queue.dart';
 
 class PlayerExplorer extends StatefulWidget {
@@ -41,8 +43,14 @@ class _PlayerExplorerState extends State<PlayerExplorer>
               controller: _tabController,
               children: [
                 const PlayerQueue(),
-                Center(child: Text(context.l10n.explore)),
-                Center(child: Text(context.l10n.favorites)),
+                const Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: PodcastSearchViewNew(),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: PodcastCollectionView(),
+                ),
               ],
             ),
           ),

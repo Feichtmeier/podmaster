@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:podmaster/extensions/build_context_x.dart';
-import 'package:watch_it/watch_it.dart';
+import '../../extensions/build_context_x.dart';
+import 'package:flutter_it/flutter_it.dart';
 import '../player_manager.dart';
 import 'player_track.dart';
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:watch_it/watch_it.dart';
+import 'package:flutter_it/flutter_it.dart';
 
 import '../../common/view/confirm.dart';
 import '../../extensions/build_context_x.dart';
@@ -15,13 +15,14 @@ mixin PlayerControlMixin {
     } else {
       di<PlayerManager>().updateState(fullMode: true);
       await showDialog(
+        fullscreenDialog: true,
         context: context,
         builder: (context) => const PlayerFullView(),
       );
     }
   }
 
-  Future<void> playMatrixMedia(
+  Future<void> playMedia(
     BuildContext context, {
     required UniqueMedia media,
     bool newPlaylist = true,

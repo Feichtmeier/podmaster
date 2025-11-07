@@ -270,8 +270,7 @@ class PodcastLibraryService {
 
   void removePodcast(String feedUrl) {
     if (!isPodcastSubscribed(feedUrl)) return;
-    final newList = List<String>.from(_podcasts);
-    newList.remove(feedUrl);
+    final newList = List<String>.from(_podcasts)..remove(feedUrl);
     _sharedPreferences
         .setStringList(SPKeys.podcastFeedUrls, newList)
         .then(notify);

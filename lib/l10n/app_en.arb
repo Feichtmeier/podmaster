@@ -188,5 +188,6 @@
     "episodes": "Episodes",
     "search": "Search",
     "retry": "Retry",
-    "oopsSomethingWentWrong": "Oops! Something went wrong."
+    "oopsSomethingWentWrong": "Oops! Something went wrong.",
+    "collection": "Collection"
 }

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:listen_it/listen_it.dart';
-import 'package:watch_it/watch_it.dart';
+import 'package:flutter_it/flutter_it.dart';
 
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/duration_x.dart';
-import '../data/local_media.dart';
+import '../data/station_media.dart';
 import '../player_manager.dart';
 
 class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
@@ -52,7 +51,8 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
             crossAxisAlignment: crossAxisAlignment,
             children: [
               Text(
-                (media is LocalMedia ? media.artist : media.title) ?? 'Unknown',
+                (media is! StationMedia ? media.collectionName : media.title) ??
+                    'Unknown',
                 maxLines: 1,
                 style: (artistStyle ?? textTheme.labelSmall)?.copyWith(
                   color: textColor,
@@ -60,7 +60,7 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
                 ),
               ),
               Text(
-                (media is LocalMedia ? media.title : remoteTitle) ??
+                (media is! StationMedia ? media.title : remoteTitle) ??
                     media.title ??
                     'Unknown',
                 maxLines: 1,

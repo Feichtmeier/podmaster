@@ -13,11 +13,13 @@ class EpisodeMedia extends UniqueMedia {
     String? albumArtUrl,
     List<String> genres = const [],
     String? collectionName,
+    String? artist,
   }) : _feedUrl = feedUrl,
        _bitRate = bitRate,
        _albumArtUrl = albumArtUrl,
        _genres = genres,
-       _collectionName = collectionName;
+       _collectionName = collectionName,
+       _artist = artist;
 
   final Episode episode;
   final String _feedUrl;
@@ -25,9 +27,12 @@ class EpisodeMedia extends UniqueMedia {
   final String? _albumArtUrl;
   final List<String> _genres;
   final String? _collectionName;
+  final String? _artist;
   String? get url => episode.contentUrl;
 
   String get feedUrl => _feedUrl;
+
+  String? get description => episode.description;
 
   @override
   Uint8List? get artData => null;
@@ -41,7 +46,7 @@ class EpisodeMedia extends UniqueMedia {
   String? get artUrl => episode.imageUrl ?? _albumArtUrl;
 
   @override
-  String? get artist => episode.author;
+  String? get artist => _artist;
 
   @override
   int? get bitrate => _bitRate;

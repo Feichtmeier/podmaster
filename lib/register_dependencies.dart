@@ -1,13 +1,20 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_it/flutter_it.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:watch_it/watch_it.dart';
 
 import 'app/app_config.dart';
 import 'common/platforms.dart';
+import 'notifications/notifications_service.dart';
 import 'player/player_manager.dart';
+import 'podcasts/download_manager.dart';
+import 'podcasts/podcast_library_service.dart';
+import 'podcasts/podcast_manager.dart';
+import 'podcasts/podcast_service.dart';
+import 'settings/settings_manager.dart';
+import 'settings/settings_service.dart';
 
 void registerDependencies() {
   di
@@ -37,5 +44,39 @@ void registerDependencies() {
       ),
       // dependsOn: [VideoController],
       dispose: (s) async => s.dispose(),
+    )
+    ..registerSingletonAsync<SettingsService>(() async {
+      final service = SettingsService(
+        sharedPreferences: di<SharedPreferences>(),
+      );
+      await service.init();
+      return service;
+    }, dependsOn: [SharedPreferences])
+    ..registerLazySingleton<NotificationsService>(() => NotificationsService())
+    ..registerSingletonWithDependencies<PodcastLibraryService>(
+      () => PodcastLibraryService(sharedPreferences: di<SharedPreferences>()),
+      dependsOn: [SharedPreferences],
+    )
+    ..registerSingletonWithDependencies<PodcastService>(
+      () => PodcastService(
+        libraryService: di<PodcastLibraryService>(),
+        notificationsService: di<NotificationsService>(),
+        settingsService: di<SettingsService>(),
+      ),
+      dependsOn: [PodcastLibraryService, SettingsService],
+    )
+    ..registerSingletonWithDependencies<PodcastManager>(
+      () => PodcastManager(podcastService: di<PodcastService>()),
+      dependsOn: [PodcastService],
+    )
+    ..registerLazySingleton<SettingsManager>(
+      () => SettingsManager(service: di<SettingsService>()),
+    )
+    ..registerLazySingleton<DownloadManager>(
+      () => DownloadManager(
+        libraryService: di<PodcastLibraryService>(),
+        settingsService: di<SettingsService>(),
+        dio: di<Dio>(),
+      ),
     );
 }

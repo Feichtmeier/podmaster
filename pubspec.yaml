@@ -15,18 +15,17 @@ dependencies:
       ref: ad6f743b73e320670449026fa1852d9978438bb9
   cached_network_image: ^3.4.1
   collection: ^1.19.1
-  command_it: ^8.0.0
   custom_adaptive_scaffold: ^2.0.2
   dio: ^5.7.0
   file: ^7.0.1
   flutter:
     sdk: flutter
   flutter_cache_manager: ^3.4.1
+  flutter_it: ^1.0.2
   flutter_localizations:
     sdk: flutter
   future_loading_dialog: ^0.3.0
   html: ^0.15.6
-  listen_it: ^5.3.3
   local_notifier: ^0.1.6
   media_kit:
     git:
@@ -53,15 +52,15 @@ dependencies:
   shared_preferences: ^2.5.3
   system_theme: ^3.1.2
   url_launcher: ^6.3.2
-  watch_it: ^2.0.1
+
   window_manager: ^0.5.1
   xdg_directories: ^1.1.0
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
+  flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
-  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
