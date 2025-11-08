@@ -33,8 +33,7 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
     return watchValue(
       (PodcastManager m) => m.fetchEpisodeMediaCommand.results,
     ).toWidget(
-      onData: (episodes, param) => ListView.builder(
-        padding: const EdgeInsets.all(16),
+      onData: (episodes, param) => SliverList.builder(
         itemCount: episodes.length,
 
         itemBuilder: (context, index) {
@@ -95,10 +94,14 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
           );
         },
       ),
-      onError: (error, lastResult, param) =>
-          Center(child: Text('Error loading episodes: $error')),
-      whileExecuting: (res, query) =>
-          const Center(child: CircularProgressIndicator.adaptive()),
+      onError: (error, lastResult, param) => SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: Text('Error loading episodes: $error')),
+      ),
+      whileExecuting: (res, query) => const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator.adaptive()),
+      ),
     );
   }
 }

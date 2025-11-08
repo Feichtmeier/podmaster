@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 
 import '../../common/view/no_search_result_page.dart';
+import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../podcast_manager.dart';
 import 'podcast_card.dart';
@@ -21,14 +22,8 @@ class PodcastSearchViewNew extends StatelessWidget with WatchItMixin {
                   ? NoSearchResultPage(message: Text(context.l10n.nothingFound))
                   : GridView.builder(
                       itemCount: result.items.length,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                            maxCrossAxisExtent: 200,
-                            mainAxisExtent: 280,
-                          ),
+                      padding: kGridViewPadding,
+                      gridDelegate: kGridViewDelegate,
                       itemBuilder: (context, index) => PodcastCard(
                         key: ValueKey(result.items.elementAt(index).feedUrl),
                         podcastItem: result.items.elementAt(index),

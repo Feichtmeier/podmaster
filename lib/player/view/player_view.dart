@@ -97,6 +97,7 @@ class PlayerView extends StatelessWidget with WatchItMixin, PlayerControlMixin {
                       style: playerButtonStyle,
                       icon: Icon(Icons.stop, color: iconColor),
                       onPressed: () {
+                        di<PlayerManager>().setPlaylist([], play: false);
                         di<PlayerManager>().stop();
                         di<PlayerManager>().updateState(fullMode: false);
                         Navigator.of(context).maybePop();

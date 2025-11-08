@@ -154,19 +154,17 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
 
   Playlist get playlist => _player.state.playlist;
 
-  Stream<UniqueMedia?> get currentMediaStream =>
-      _player.stream.playlist.asyncMap((playlist) async {
-        final media = playlist.medias[playlist.index] as UniqueMedia?;
+  Stream<UniqueMedia?> get currentMediaStream => _player.stream.playlist
+      .where((playlist) => playlist.medias.isNotEmpty)
+      .asyncMap((playlist) async {
+        final media = playlist.medias[playlist.index] as UniqueMedia;
 
         final artUri =
             media is LocalMedia ||
                 playerViewState.value.remoteSourceArtUrl == null
-            ? await media?.artUri
+            ? await media.artUri
             : Uri.tryParse(playerViewState.value.remoteSourceArtUrl!);
 
-        if (media == null) {
-          return null;
-        }
         mediaItem.add(
           MediaItem(
             id: media.id,
@@ -183,7 +181,8 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
         }
 
         return media;
-      }).distinct();
+      })
+      .distinct();
 
   UniqueMedia? get currentMedia => _player.state.playlist.medias.isEmpty
       ? null
@@ -211,10 +210,14 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
       _player.state.tracks.video.isNotEmpty &&
       _player.state.tracks.video.any((e) => e.fps != null && e.fps! > 1);
 
-  Future<void> setPlaylist(List<UniqueMedia> mediaList, {int index = 0}) async {
+  Future<void> setPlaylist(
+    List<UniqueMedia> mediaList, {
+    int index = 0,
+    bool play = true,
+  }) async {
     if (mediaList.isEmpty) return;
     updateState(resetRemoteSource: true);
-    await _player.open(Playlist(mediaList, index: index));
+    await _player.open(Playlist(mediaList, index: index), play: play);
   }
 
   Future<void> addToPlaylist(UniqueMedia media) async => _player.add(media);

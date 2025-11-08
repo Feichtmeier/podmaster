@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
+
+import '../../common/view/ui_constants.dart';
 import '../podcast_library_service.dart';
 import 'podcast_card.dart';
 
@@ -21,13 +23,8 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
     final podcasts = di<PodcastLibraryService>().podcasts;
 
     return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        maxCrossAxisExtent: 200,
-        mainAxisExtent: 280,
-      ),
+      padding: kGridViewPadding,
+      gridDelegate: kGridViewDelegate,
       itemCount: podcastsLength,
       itemBuilder: (context, index) {
         final feedUrl = podcasts.elementAt(index);
