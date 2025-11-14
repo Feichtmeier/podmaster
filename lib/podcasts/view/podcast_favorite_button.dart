@@ -41,7 +41,11 @@ class PodcastFavoriteButton extends StatelessWidget with WatchItMixin {
     final icon = Icon(isSubscribed ? Icons.favorite : Icons.favorite_border);
 
     if (_floating) {
-      return FloatingActionButton.small(onPressed: onPressed, child: icon);
+      return FloatingActionButton.small(
+        heroTag: 'favtag',
+        onPressed: onPressed,
+        child: icon,
+      );
     }
 
     return IconButton(onPressed: onPressed, icon: icon);

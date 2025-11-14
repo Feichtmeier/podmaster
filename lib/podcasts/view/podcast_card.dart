@@ -7,7 +7,9 @@ import 'package:podcast_search/podcast_search.dart';
 import '../../common/view/safe_network_image.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
+import '../../extensions/string_x.dart';
 import '../../player/player_manager.dart';
+import '../podcast_library_service.dart';
 import '../podcast_service.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
@@ -36,10 +38,10 @@ class _PodcastCardState extends State<PodcastCard> {
       focusColor: theme.colorScheme.primary,
       borderRadius: BorderRadius.circular(12),
       onHover: (hovering) => setState(() => _hovered = hovering),
-      onTap: () => showDialog(
-        context: context,
-        fullscreenDialog: true,
-        builder: (context) => PodcastPage(podcastItem: widget.podcastItem),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => PodcastPage(podcastItem: widget.podcastItem),
+        ),
       ),
       child: SizedBox(
         width: kGridViewDelegate.maxCrossAxisExtent,
@@ -93,6 +95,7 @@ class _PodcastCardState extends State<PodcastCard> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               FloatingActionButton.small(
+                                heroTag: 'podcastcardfap',
                                 onPressed: () async {
                                   final res = await showFutureLoadingDialog(
                                     context: context,
@@ -101,9 +104,18 @@ class _PodcastCardState extends State<PodcastCard> {
                                   );
                                   if (res.isValue) {
                                     final episodes = res.asValue!.value;
-                                    if (episodes.isNotEmpty) {
+                                    final withDownloads = episodes.map((e) {
+                                      final download =
+                                          di<PodcastLibraryService>()
+                                              .getDownload(e.id);
+                                      if (download != null) {
+                                        return e.copyWithX(resource: download);
+                                      }
+                                      return e;
+                                    }).toList();
+                                    if (withDownloads.isNotEmpty) {
                                       await di<PlayerManager>().setPlaylist(
-                                        episodes,
+                                        withDownloads,
                                         index: 0,
                                       );
                                     }
@@ -117,8 +129,9 @@ class _PodcastCardState extends State<PodcastCard> {
                             ],
                           )
                         : Text(
-                            widget.podcastItem.collectionName ?? '',
-                            style: Theme.of(context).textTheme.labelMedium,
+                            widget.podcastItem.collectionName?.unEscapeHtml ??
+                                '',
+                            style: Theme.of(context).textTheme.labelSmall,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 3,
                             textAlign: TextAlign.center,

@@ -78,89 +78,81 @@ class PlayerFullView extends StatelessWidget
             borderRadius: BorderRadius.circular(context.buttonRadius),
           ),
         ),
-        dialogTheme: context.theme.dialogTheme.copyWith(
-          backgroundColor: getPlayerBg(
-            theme,
-            color,
-            saturation: colorScheme.isLight ? -0.8 : -0.6,
-          ),
+        scaffoldBackgroundColor: getPlayerBg(
+          theme,
+          color,
+          saturation: colorScheme.isLight ? -0.8 : -0.6,
         ),
       ),
 
-      child: Dialog.fullscreen(
-        child: Column(
-          children: [
-            YaruWindowTitleBar(
-              title: Text('Media Player', style: TextStyle(color: iconColor)),
-              backgroundColor: Colors.transparent,
-              border: BorderSide.none,
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.arrow_downward, color: iconColor),
-                  onPressed: () => togglePlayerFullMode(context),
+      child: Scaffold(
+        appBar: YaruWindowTitleBar(
+          title: Text('Media Player', style: TextStyle(color: iconColor)),
+          backgroundColor: Colors.transparent,
+          border: BorderSide.none,
+          actions: [
+            IconButton(
+              icon: Icon(Icons.arrow_downward, color: iconColor),
+              onPressed: () => togglePlayerFullMode(context),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: IconButton(
+                isSelected: showPlayerExplorer,
+                icon: Icon(
+                  showPlayerExplorer
+                      ? Icons.view_sidebar
+                      : Icons.view_sidebar_outlined,
+                  color: iconColor,
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: IconButton(
-                    isSelected: showPlayerExplorer,
-                    icon: Icon(
-                      showPlayerExplorer
-                          ? Icons.view_sidebar
-                          : Icons.view_sidebar_outlined,
-                      color: iconColor,
-                    ),
-                    onPressed: () => di<PlayerManager>().updateState(
-                      showPlayerExplorer: !showPlayerExplorer,
+                onPressed: () => di<PlayerManager>().updateState(
+                  showPlayerExplorer: !showPlayerExplorer,
+                ),
+              ),
+            ),
+          ],
+        ),
+        bottomNavigationBar: isVideo ? null : const PlayerView(),
+        body: Row(
+          children: [
+            if (!isPortrait || (isPortrait && !showPlayerExplorer))
+              if (isVideo)
+                Expanded(
+                  flex: 2,
+                  child: Video(controller: di<PlayerManager>().videoController),
+                )
+              else
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        PlayerAlbumArt(
+                          media: media,
+                          dimension: 300,
+                          fit: BoxFit.fitHeight,
+                        ),
+                        if (isPortrait ||
+                            (!isPortrait && !showPlayerExplorer)) ...[
+                          const SizedBox(height: kBigPadding),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: kBigPadding,
+                            ),
+                            child: PlayerTrackInfo(
+                              textColor: iconColor,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              artistStyle: context.textTheme.bodyMedium,
+                              titleStyle: context.textTheme.bodyLarge,
+                              durationStyle: context.textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  if (!isPortrait || (isPortrait && !showPlayerExplorer))
-                    if (isVideo)
-                      Expanded(
-                        child: Video(
-                          controller: di<PlayerManager>().videoController,
-                        ),
-                      )
-                    else
-                      Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            PlayerAlbumArt(
-                              media: media,
-                              dimension: 300,
-                              fit: BoxFit.fitHeight,
-                            ),
-                            if (isPortrait ||
-                                (!isPortrait && !showPlayerExplorer)) ...[
-                              const SizedBox(height: kBigPadding),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: kBigPadding,
-                                ),
-                                child: PlayerTrackInfo(
-                                  textColor: iconColor,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  artistStyle: context.textTheme.bodyMedium,
-                                  titleStyle: context.textTheme.bodyLarge,
-                                  durationStyle: context.textTheme.bodySmall,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                  if (showPlayerExplorer)
-                    const Expanded(child: PlayerExplorer()),
-                ],
-              ),
-            ),
-            if (!isVideo) const PlayerView(),
+            if (showPlayerExplorer) const Expanded(child: PlayerExplorer()),
           ],
         ),
       ),

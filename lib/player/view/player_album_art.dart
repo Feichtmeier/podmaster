@@ -74,8 +74,11 @@ class PlayerRemoteSourceImage extends StatelessWidget with WatchItMixin {
     );
 
     final artUrl = watchStream(
-      (PlayerManager p) => p.currentMediaStream.map((e) => e?.artUrl),
-      initialValue: di<PlayerManager>().currentMedia?.artUrl,
+      (PlayerManager p) =>
+          p.currentMediaStream.map((e) => e?.artUrl ?? e?.collectionArtUrl),
+      initialValue:
+          di<PlayerManager>().currentMedia?.artUrl ??
+          di<PlayerManager>().currentMedia?.collectionArtUrl,
     ).data;
 
     final color = watchValue(

@@ -108,9 +108,9 @@ class DownloadManager extends SafeChangeNotifier {
       url: url,
       path: path,
       name: media.title ?? '',
-    ).then((response) {
+    ).then((response) async {
       if (response?.statusCode == 200) {
-        _libraryService.addDownload(
+        await _libraryService.addDownload(
           episodeID: url,
           path: path,
           feedUrl: media.feedUrl,

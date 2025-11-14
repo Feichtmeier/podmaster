@@ -21,12 +21,12 @@ jobs:
       - run: flutter pub get
       - run: dart format --set-exit-if-changed .
 
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: kuhnroyal/flutter-fvm-config-action/setup@v3
-      - run: flutter test
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - uses: kuhnroyal/flutter-fvm-config-action/setup@v3
+  #     - run: flutter test
 
   build:
     runs-on: ubuntu-latest

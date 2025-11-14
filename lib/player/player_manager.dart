@@ -8,7 +8,6 @@ import 'package:safe_change_notifier/safe_change_notifier.dart';
 
 import '../common/logging.dart';
 import '../extensions/color_x.dart';
-import 'data/local_media.dart';
 import 'data/unique_media.dart';
 import 'view/player_view_state.dart';
 
@@ -150,6 +149,13 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
   Stream<int> get playlistIndexStream =>
       playlistStream.map((e) => e.index).distinct();
 
+  Stream<List<UniqueMedia>> get mediasStream => playlistStream
+      .map((e) => e.medias.whereType<UniqueMedia>().toList())
+      .distinct();
+
+  List<UniqueMedia> get medias =>
+      playlist.medias.whereType<UniqueMedia>().toList();
+
   int get playlistIndex => _player.state.playlist.index;
 
   Playlist get playlist => _player.state.playlist;
@@ -159,11 +165,12 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
         if (playlist.medias.isEmpty) return null;
         final media = playlist.medias[playlist.index] as UniqueMedia;
 
-        final artUri =
-            media is LocalMedia ||
-                playerViewState.value.remoteSourceArtUrl == null
-            ? await media.artUri
-            : Uri.tryParse(playerViewState.value.remoteSourceArtUrl!);
+        final Uri? artUri;
+        if (playerViewState.value.remoteSourceArtUrl != null) {
+          artUri = Uri.tryParse(playerViewState.value.remoteSourceArtUrl!);
+        } else {
+          artUri = await media.artUri;
+        }
 
         mediaItem.add(
           MediaItem(
@@ -176,9 +183,7 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
           ),
         );
 
-        if (media is LocalMedia) {
-          await _setLocalColor(media);
-        }
+        await _setLocalColor(media);
 
         return media;
       }).distinct();
@@ -253,12 +258,15 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> skipToNext() async => _player.next();
 
+  bool _firstClick = true;
   @override
   Future<void> skipToPrevious() async {
-    if (position.value.inSeconds < 10) {
+    if (position.value.inSeconds < 10 && _firstClick) {
       await seek(Duration.zero);
+      _firstClick = false;
       return;
     }
+    _firstClick = true;
     return _player.previous();
   }
 
@@ -291,7 +299,7 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
     await _player.dispose();
   }
 
-  Future<void> _setLocalColor(LocalMedia media) async {
+  Future<void> _setLocalColor(UniqueMedia media) async {
     try {
       final art = media.artData;
 

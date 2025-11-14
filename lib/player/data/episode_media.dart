@@ -7,6 +7,10 @@ import 'unique_media.dart';
 class EpisodeMedia extends UniqueMedia {
   EpisodeMedia(
     super.resource, {
+    super.extras,
+    super.httpHeaders,
+    super.start,
+    super.end,
     required this.episode,
     required String feedUrl,
     int? bitRate,
@@ -30,9 +34,7 @@ class EpisodeMedia extends UniqueMedia {
   final String? _collectionName;
   final String? _artist;
   String? get url => episode.contentUrl;
-
   String get feedUrl => _feedUrl;
-
   String? get description => episode.description;
 
   @override
@@ -65,7 +67,7 @@ class EpisodeMedia extends UniqueMedia {
   List<String> get genres => _genres;
 
   @override
-  String get id => episode.contentUrl ?? episode.guid;
+  String get id => episode.guid;
 
   @override
   String? get language => episode.transcripts.isNotEmpty
@@ -79,4 +81,35 @@ class EpisodeMedia extends UniqueMedia {
 
   @override
   String? get title => episode.title;
+
+  @override
+  String? get collectionArtUrl => _albumArtUrl;
+
+  EpisodeMedia copyWithX({
+    String? resource,
+    Map<String, dynamic>? extras,
+    Map<String, String>? httpHeaders,
+    Duration? start,
+    Duration? end,
+    Episode? episode,
+    String? feedUrl,
+    int? bitRate,
+    String? albumArtUrl,
+    List<String> genres = const [],
+    String? collectionName,
+    String? artist,
+  }) => EpisodeMedia(
+    resource ?? this.resource,
+    episode: episode ?? this.episode,
+    feedUrl: feedUrl ?? this.feedUrl,
+    bitRate: bitRate ?? _bitRate,
+    albumArtUrl: albumArtUrl ?? _albumArtUrl,
+    genres: genres.isEmpty ? _genres : genres,
+    collectionName: collectionName ?? _collectionName,
+    artist: artist ?? _artist,
+    extras: extras ?? this.extras,
+    start: start ?? this.start,
+    end: end ?? this.end,
+    httpHeaders: httpHeaders ?? this.httpHeaders,
+  );
 }

@@ -34,7 +34,9 @@ var playerButtonStyle = IconButton.styleFrom(
 
 const kDefaultTileLeadingDimension = 40.0;
 
-const kGridViewPadding = EdgeInsets.symmetric(horizontal: kBigPadding);
+final kGridViewPadding = const EdgeInsets.symmetric(
+  horizontal: kBigPadding,
+).copyWith(bottom: kBigPadding);
 const kGridViewDelegate = SliverGridDelegateWithMaxCrossAxisExtent(
   crossAxisSpacing: kBigPadding,
   mainAxisSpacing: kBigPadding,

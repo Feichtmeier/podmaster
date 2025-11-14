@@ -28,6 +28,8 @@ void registerDependencies() {
         const WindowOptions(
           backgroundColor: Colors.transparent,
           minimumSize: Size(500, 700),
+          size: Size(900, 800),
+          center: true,
           skipTaskbar: false,
           titleBarStyle: TitleBarStyle.hidden,
         ),

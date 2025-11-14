@@ -4,6 +4,8 @@ import 'package:yaru/yaru.dart';
 
 import '../common/view/ui_constants.dart';
 import '../extensions/build_context_x.dart';
+import '../player/player_manager.dart';
+import '../player/view/player_full_view.dart';
 import '../player/view/player_view.dart';
 import '../podcasts/download_manager.dart';
 import '../podcasts/view/podcast_collection_view.dart';
@@ -20,6 +22,12 @@ class Home extends StatelessWidget with WatchItMixin {
       handler: downloadMessageStreamHandler,
     );
 
+    final playerFullWindowMode = watchValue(
+      (PlayerManager m) => m.playerViewState.select((e) => e.fullMode),
+    );
+
+    if (playerFullWindowMode) return const PlayerFullView();
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -33,14 +41,16 @@ class Home extends StatelessWidget with WatchItMixin {
             ],
           ),
           actions: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: kSmallPadding),
-              child: IconButton(
-                onPressed: () => showDialog(
-                  context: context,
-                  builder: (context) => const SettingsDialog(),
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: kSmallPadding),
+                child: IconButton(
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (context) => const SettingsDialog(),
+                  ),
+                  icon: const Icon(Icons.settings),
                 ),
-                icon: const Icon(Icons.settings),
               ),
             ),
           ],

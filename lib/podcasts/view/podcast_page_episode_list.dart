@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
-import '../../common/view/html_text.dart';
-import '../../extensions/build_context_x.dart';
-import '../../extensions/date_time_x.dart';
-import '../../extensions/duration_x.dart';
+
 import '../../player/player_manager.dart';
-import '../podcast_library_service.dart';
 import '../podcast_manager.dart';
-import 'download_button.dart';
+import 'episode_tile.dart';
 
 class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
   const PodcastPageEpisodeList({super.key, required this.podcastItem});
@@ -17,90 +13,21 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
     callOnce(
       (context) => di<PodcastManager>().fetchEpisodeMediaCommand(podcastItem),
     );
-
-    final currentMedia = watchStream(
-      (PlayerManager m) => m.currentMediaStream,
-      initialValue: di<PlayerManager>().currentMedia,
-    ).data;
-
-    final isPlaying =
-        watchStream(
-          (PlayerManager p) => p.isPlayingStream,
-          initialValue: di<PlayerManager>().isPlaying,
-          preserveState: false,
-        ).data ??
-        false;
 
     return watchValue(
       (PodcastManager m) => m.fetchEpisodeMediaCommand.results,
     ).toWidget(
       onData: (episodes, param) => SliverList.builder(
         itemCount: episodes.length,
-
-        itemBuilder: (context, index) {
-          final episode = episodes[index];
-          final selected = currentMedia?.id == episode.id;
-          void onPressed() {
-            if (isPlaying && selected) {
-              di<PlayerManager>().pause();
-            } else {
-              if (selected) {
-                di<PlayerManager>().playOrPause();
-              } else {
-                di<PlayerManager>().setPlaylist(episodes, index: index);
-              }
-            }
-          }
-
-          return ExpansionTile(
-            initiallyExpanded: selected,
-            textColor: selected ? theme.colorScheme.primary : null,
-            collapsedTextColor: selected ? theme.colorScheme.primary : null,
-            title: Row(
-              spacing: 4,
-              children: [
-                IconButton.filled(
-                  onPressed: onPressed,
-                  icon: Icon(
-                    isPlaying && selected ? Icons.pause : Icons.play_arrow,
-                    color: selected ? theme.colorScheme.primary : null,
-                  ),
-                ),
-                Expanded(child: Text(episode.title ?? 'No Title')),
-              ],
-            ),
-
-            children: <Widget>[
-              ListTile(
-                selectedColor: theme.colorScheme.primary,
-                selected: selected,
-                title: Text(
-                  '${episode.creationDateTime!.unixTimeToDateString} · ${episode.duration?.formattedTime ?? 'Unknown duration'}',
-                ),
-                titleTextStyle: theme.textTheme.labelSmall,
-                subtitle: HtmlText(
-                  text: episode.description ?? 'No Description',
-                ),
-                leading: const SizedBox(width: 20),
-                trailing: DownloadButton(
-                  audio: episode,
-                  addPodcast: () => di<PodcastLibraryService>().addPodcast(
-                    feedUrl: episode.feedUrl,
-                    imageUrl: episode.artUrl,
-                    artist: episode.artist ?? '',
-                    name: episode.collectionName ?? '',
-                    genreList: episode.genres,
-                  ),
-                ),
-                onTap: onPressed,
-              ),
-            ],
-          );
-        },
+        itemBuilder: (context, index) => EpisodeTile(
+          episode: episodes.elementAt(index),
+          podcastImage: podcastItem.bestArtworkUrl,
+          setPlaylist: () =>
+              di<PlayerManager>().setPlaylist(episodes, index: index),
+        ),
       ),
       onError: (error, lastResult, param) => SliverFillRemaining(
         hasScrollBody: false,

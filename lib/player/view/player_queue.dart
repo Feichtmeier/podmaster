@@ -4,7 +4,7 @@ import 'package:flutter_it/flutter_it.dart';
 import '../../common/view/theme.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
-import '../data/unique_media.dart';
+import '../../extensions/string_x.dart';
 import '../player_manager.dart';
 
 class PlayerQueue extends StatefulWidget with WatchItStatefulWidgetMixin {
@@ -26,8 +26,8 @@ class _PlayerQueueState extends State<PlayerQueue> {
   @override
   Widget build(BuildContext context) {
     final medias = watchStream(
-      (PlayerManager p) => p.playlistStream.map((e) => e.medias).distinct(),
-      initialValue: di<PlayerManager>().playlist.medias,
+      (PlayerManager p) => p.mediasStream,
+      initialValue: di<PlayerManager>().medias,
       preserveState: true,
     ).data;
 
@@ -81,7 +81,8 @@ class _PlayerQueueState extends State<PlayerQueue> {
                             onTap: () => di<PlayerManager>().jump(index),
                             leading: Text('${index + 1}'),
                             title: Text(
-                              (media as UniqueMedia).title ?? 'Unknown',
+                              media.title?.unEscapeHtml ?? 'Unknown',
+                              maxLines: 2,
                             ),
                             subtitle: Text(
                               media.artist ?? 'Unknown',
