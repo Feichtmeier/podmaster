@@ -4,6 +4,11 @@ import '../common/extenal_path_service.dart';
 import '../extensions/shared_preferences_x.dart';
 import 'settings_service.dart';
 
+/// Manages application settings.
+///
+/// Note: This manager is registered as a singleton in get_it and lives for the
+/// entire app lifetime. Commands don't need explicit disposal as they're
+/// automatically cleaned up when the app process terminates.
 class SettingsManager {
   SettingsManager({
     required SettingsService service,

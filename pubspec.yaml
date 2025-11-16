@@ -24,7 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_cache_manager: ^3.4.1
-  flutter_it: ^1.0.2
+  flutter_it: ^2.0.0
   flutter_localizations:
     sdk: flutter
   flutter_widget_from_html_core: ^0.17.0

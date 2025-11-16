@@ -15,7 +15,7 @@ class SettingsDialog extends StatelessWidget with WatchItMixin {
     children: [
       ListTile(
         trailing: ElevatedButton(
-          onPressed: di<SettingsManager>().downloadsDirCommand.execute,
+          onPressed: di<SettingsManager>().downloadsDirCommand.run,
           child: Text(context.l10n.open),
         ),
         title: Text(context.l10n.downloadsDirectory),
@@ -33,7 +33,7 @@ class SettingsDialog extends StatelessWidget with WatchItMixin {
               (SettingsManager m) => m.downloadsDirCommand.results,
             ).toWidget(
               onData: (dir, param) => Text(dir ?? ''),
-              whileExecuting: (_, _) => const SizedBox(
+              whileRunning: (_, _) => const SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2),

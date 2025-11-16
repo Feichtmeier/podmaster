@@ -32,7 +32,7 @@ class PodcastSearchViewNew extends StatelessWidget with WatchItMixin {
                     ),
               onError: (error, lastResult, param) =>
                   NoSearchResultPage(message: Text(error.toString())),
-              whileExecuting: (res, query) =>
+              whileRunning: (res, query) =>
                   const Center(child: CircularProgressIndicator.adaptive()),
             ),
       ),
@@ -70,7 +70,7 @@ class _PodcastSearchViewHeaderState extends State<PodcastSearchViewHeader> {
     ).copyWith(top: kBigPadding, bottom: kSmallPadding),
     child: TextField(
       controller: _controller,
-      onChanged: di<PodcastManager>().textChangedCommand.execute,
+      onChanged: di<PodcastManager>().textChangedCommand.run,
       decoration: InputDecoration(
         prefixIcon: const Icon(Icons.search),
         label: Text(context.l10n.search),
@@ -79,7 +79,7 @@ class _PodcastSearchViewHeaderState extends State<PodcastSearchViewHeader> {
           icon: const Icon(Icons.clear),
           onPressed: () {
             _controller.clear();
-            di<PodcastManager>().textChangedCommand.execute('');
+            di<PodcastManager>().textChangedCommand.run('');
           },
         ),
       ),

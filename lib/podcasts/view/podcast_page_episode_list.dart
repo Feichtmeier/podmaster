@@ -33,7 +33,7 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
         hasScrollBody: false,
         child: Center(child: Text('Error loading episodes: $error')),
       ),
-      whileExecuting: (res, query) => const SliverFillRemaining(
+      whileRunning: (res, query) => const SliverFillRemaining(
         hasScrollBody: false,
         child: Center(child: CircularProgressIndicator.adaptive()),
       ),
