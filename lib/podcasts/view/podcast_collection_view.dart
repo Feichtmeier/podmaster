@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
 
+import '../../collection/collection_manager.dart';
 import '../../common/view/ui_constants.dart';
 import '../podcast_library_service.dart';
 import 'podcast_card.dart';
@@ -12,21 +13,24 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    final podcastsLength =
+    final filterText = watchValue(
+      (CollectionManager s) => s.textChangedCommand,
+    );
+    final podcasts =
         watchStream(
-          (PodcastLibraryService s) => s.propertiesChanged.map(
-            (e) => di<PodcastLibraryService>().podcastsLength,
+          (PodcastLibraryService s) => s.getPodcastStream(filterText),
+          initialValue: di<PodcastLibraryService>().getFilteredPodcasts(
+            filterText,
           ),
-          initialValue: di<PodcastLibraryService>().podcastsLength,
+          preserveState: false,
+          allowStreamChange: true,
         ).data ??
-        0;
-
-    final podcasts = di<PodcastLibraryService>().podcasts;
+        <String>{};
 
     return GridView.builder(
       padding: kGridViewPadding.copyWith(top: kBigPadding),
       gridDelegate: kGridViewDelegate,
-      itemCount: podcastsLength,
+      itemCount: podcasts.length,
       itemBuilder: (context, index) {
         final feedUrl = podcasts.elementAt(index);
         return PodcastCard(

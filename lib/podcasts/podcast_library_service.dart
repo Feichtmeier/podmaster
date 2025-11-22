@@ -23,6 +23,22 @@ class PodcastLibraryService {
 
   Set<String> get _podcasts =>
       _sharedPreferences.getStringList(SPKeys.podcastFeedUrls)?.toSet() ?? {};
+
+  Stream<Set<String>> getPodcastStream(String filterText) =>
+      propertiesChanged.map((e) => getFilteredPodcasts(filterText));
+
+  Set<String> getFilteredPodcasts(String filterText) {
+    return podcasts.where((feedUrl) {
+      if (filterText.isEmpty) return true;
+      final name = getSubscribedPodcastName(feedUrl);
+      final artist = getSubscribedPodcastArtist(feedUrl);
+      return (name != null &&
+              name.toLowerCase().contains(filterText.toLowerCase())) ||
+          (artist != null &&
+              artist.toLowerCase().contains(filterText.toLowerCase()));
+    }).toSet();
+  }
+
   bool isPodcastSubscribed(String feedUrl) => _podcasts.contains(feedUrl);
   List<String> get podcastFeedUrls => _podcasts.toList();
   Set<String> get podcasts => _podcasts;

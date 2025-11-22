@@ -40,7 +40,7 @@ class RadioBrowserTile extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    title: Text(media.title ?? context.l10n.stations),
+    title: Text(media.title),
     selectedColor: context.theme.colorScheme.primary,
     selected:
         watchStream(

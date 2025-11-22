@@ -20,7 +20,11 @@ class RadioFavoritesList extends StatelessWidget with WatchItMixin {
       (RadioManager s) => s.favoriteStationsCommand.results,
     ).toWidget(
       onData: (favorites, _) => ListView.builder(
-        padding: const EdgeInsets.only(top: kBigPadding),
+        padding: const EdgeInsets.only(
+          top: kSmallPadding,
+          left: kBigPadding,
+          right: kBigPadding,
+        ),
         itemCount: favorites.length,
         itemBuilder: (context, index) {
           final media = favorites[index];
@@ -61,7 +65,7 @@ class _RadioFavoriteListTile extends StatelessWidget with WatchItMixin {
         false;
 
     return ListTile(
-      title: Text(media.title ?? context.l10n.stations),
+      title: Text(media.title),
       subtitle: Text(media.genres.take(5).join(', ')),
       minLeadingWidth: kDefaultTileLeadingDimension,
       leading: RemoteMediaListTileImage(media: media),

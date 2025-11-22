@@ -8,6 +8,7 @@ import '../../extensions/color_x.dart';
 
 ButtonStyle getTextFieldSuffixStyle(BuildContext context) =>
     IconButton.styleFrom(
+      fixedSize: const Size.square(40),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(context.buttonRadius),

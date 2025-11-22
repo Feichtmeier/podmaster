@@ -5,22 +5,23 @@ import '../../common/media_type.dart';
 import '../../common/view/theme.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
-import '../search_manager.dart';
+import '../collection_manager.dart';
 
-class SearchField extends StatefulWidget with WatchItStatefulWidgetMixin {
-  const SearchField({super.key});
+class CollectionSearchField extends StatefulWidget
+    with WatchItStatefulWidgetMixin {
+  const CollectionSearchField({super.key});
 
   @override
-  State<SearchField> createState() => _SearchFieldState();
+  State<CollectionSearchField> createState() => _CollectionSearchFieldState();
 }
 
-class _SearchFieldState extends State<SearchField> {
+class _CollectionSearchFieldState extends State<CollectionSearchField> {
   final TextEditingController _controller = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _controller.text = di<SearchManager>().textChangedCommand.value;
+    _controller.text = di<CollectionManager>().textChangedCommand.value;
   }
 
   @override
@@ -31,14 +32,14 @@ class _SearchFieldState extends State<SearchField> {
 
   @override
   Widget build(BuildContext context) {
-    final searchType = watchValue((SearchManager s) => s.searchTypeNotifier);
+    final searchType = watchValue((CollectionManager s) => s.mediaTypeNotifier);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: kBigPadding,
       ).copyWith(top: kBigPadding, bottom: kSmallPadding),
       child: TextField(
         controller: _controller,
-        onChanged: di<SearchManager>().textChangedCommand.run,
+        onChanged: di<CollectionManager>().textChangedCommand.run,
         decoration: InputDecoration(
           focusedBorder: OutlineInputBorder(
             borderSide: BorderSide(color: context.colorScheme.primary),
@@ -56,7 +57,7 @@ class _SearchFieldState extends State<SearchField> {
                     icon: Icon(e.iconData()),
                     tooltip: e.localize(context),
                     onPressed: () {
-                      di<SearchManager>().searchTypeNotifier.value = e;
+                      di<CollectionManager>().mediaTypeNotifier.value = e;
                     },
                   ),
                 )
@@ -67,7 +68,7 @@ class _SearchFieldState extends State<SearchField> {
             icon: const Icon(Icons.clear),
             onPressed: () {
               _controller.clear();
-              di<SearchManager>().textChangedCommand.run('');
+              di<CollectionManager>().textChangedCommand.run('');
             },
           ),
         ),

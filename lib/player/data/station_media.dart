@@ -24,7 +24,7 @@ class StationMedia extends UniqueMedia {
   String get id => station.stationUUID;
 
   @override
-  String? get title => station.name.trim();
+  String get title => station.name.trim();
 
   static StationMedia fromStation(Station station) {
     final media = StationMedia(
