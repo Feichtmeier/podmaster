@@ -24,7 +24,7 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
     final podcasts = di<PodcastLibraryService>().podcasts;
 
     return GridView.builder(
-      padding: kGridViewPadding.copyWith(top: 8),
+      padding: kGridViewPadding.copyWith(top: kBigPadding),
       gridDelegate: kGridViewDelegate,
       itemCount: podcastsLength,
       itemBuilder: (context, index) {

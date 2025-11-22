@@ -34,11 +34,14 @@ class Home extends StatelessWidget with WatchItMixin {
         appBar: YaruWindowTitleBar(
           border: BorderSide.none,
           titleSpacing: 0,
-          title: TabBar(
-            tabs: [
-              Tab(text: context.l10n.search),
-              Tab(text: context.l10n.collection),
-            ],
+          title: SizedBox(
+            width: 450,
+            child: TabBar(
+              tabs: [
+                Tab(text: context.l10n.search),
+                Tab(text: context.l10n.collection),
+              ],
+            ),
           ),
           actions: [
             Flexible(
