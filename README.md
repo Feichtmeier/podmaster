@@ -1,12 +1,12 @@
 # MediaDojo
 
-A podcast desktop player as an example app to showcase the power of [flutter_it](https://flutter-it.dev)
+A podcast and radio desktop player as an example app to showcase the power of [flutter_it](https://flutter-it.dev)
 
 Disclaimer: the name might change in the future. :blush:
 
 ## What is this app about?
 
-MediaDojo is a desktop app for listening to podcasts, built with Flutter. It serves as an example application to demonstrate how to use a set of packages (`flutter_it`, `get_it`, `command_it`, `watch_it`, `listen_it`) to build a well-structured Flutter application - without code-generation! :rocket:
+MediaDojo is a desktop app for listening to podcasts and radio stations, built with Flutter. It serves as an example application to demonstrate how to use a set of packages (`flutter_it`, `get_it`, `command_it`, `watch_it`, `listen_it`) to build a well-structured Flutter application - without code-generation! :rocket:
 
 The app allows you to:
 - Search for new podcasts.
@@ -35,8 +35,13 @@ In MediaDojo, `get-it` is used as a service locator to manage dependencies. This
 
 Example classes registered in MediaDojo:
 - `PodcastService`: For fetching podcast data from the internet.
+- `PodcastLibraryService`: For managing the list of subscribed podcasts and downloaded episodes.
 - `PodcastManager`: For using commands for the search and the loading of the feeds.
 - `PlayerManager`: For managing audio playback.
+- `DownloadManager`: For handling episode downloads.
+- `SettingsManager`: For managing user settings.
+- `RadioManager`: For managing radio stations.
+- `RadioService`: For fetching radio station data.
 
 This decouples our UI from our services and managers, making them easier to test and access the references.
 
