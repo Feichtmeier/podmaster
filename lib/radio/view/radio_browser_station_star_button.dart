@@ -3,6 +3,7 @@ import 'package:flutter_it/flutter_it.dart';
 import 'package:yaru/yaru.dart';
 
 import '../../player/data/unique_media.dart';
+import '../../player/player_manager.dart';
 import '../radio_manager.dart';
 
 class RadioBrowserStationStarButton extends StatelessWidget with WatchItMixin {
@@ -21,6 +22,32 @@ class RadioBrowserStationStarButton extends StatelessWidget with WatchItMixin {
       onPressed: () => isFavorite
           ? di<RadioManager>().removeFavoriteStation(media.id)
           : di<RadioManager>().addFavoriteStation(media.id),
+      icon: Icon(isFavorite ? YaruIcons.star_filled : YaruIcons.star),
+    );
+  }
+}
+
+class RadioStationStarButton extends StatelessWidget with WatchItMixin {
+  const RadioStationStarButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final currentMedia = watchStream(
+      (PlayerManager p) => p.currentMediaStream,
+      initialValue: di<PlayerManager>().currentMedia,
+      preserveState: false,
+    ).data;
+    final isFavorite = watchValue(
+      (RadioManager s) => s.favoriteStationsCommand.select(
+        (favorites) => favorites.any((m) => m.id == currentMedia?.id),
+      ),
+    );
+    return IconButton(
+      onPressed: currentMedia == null
+          ? null
+          : () => isFavorite
+                ? di<RadioManager>().removeFavoriteStation(currentMedia.id)
+                : di<RadioManager>().addFavoriteStation(currentMedia.id),
       icon: Icon(isFavorite ? YaruIcons.star_filled : YaruIcons.star),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter_it/flutter_it.dart';
 
+import '../collection/collection_manager.dart';
 import '../player/data/station_media.dart';
 import '../search/search_manager.dart';
 import 'radio_library_service.dart';
@@ -10,11 +11,17 @@ class RadioManager {
     required RadioLibraryService radioLibraryService,
     required RadioService radioService,
     required SearchManager searchManager,
+    required CollectionManager collectionManager,
   }) : _radioLibraryService = radioLibraryService,
-       _radioService = radioService {
-    favoriteStationsCommand = Command.createAsyncNoParam(
+       _radioService = radioService,
+       _collectionManager = collectionManager {
+    favoriteStationsCommand = Command.createAsync(
       _loadFavorites,
       initialValue: [],
+    );
+
+    _collectionManager.textChangedCommand.listen(
+      (filterText, sub) => favoriteStationsCommand.run(filterText),
     );
 
     searchManager.textChangedCommand
@@ -28,8 +35,9 @@ class RadioManager {
   }
 
   final RadioLibraryService _radioLibraryService;
+  final CollectionManager _collectionManager;
   final RadioService _radioService;
-  late Command<void, List<StationMedia>> favoriteStationsCommand;
+  late Command<String?, List<StationMedia>> favoriteStationsCommand;
   late Command<String?, List<StationMedia>> updateSearchCommand;
 
   Future<List<StationMedia>> _loadMedia({
@@ -52,22 +60,29 @@ class RadioManager {
     return result?.map((e) => StationMedia.fromStation(e)).toList() ?? [];
   }
 
-  Future<List<StationMedia>> _loadFavorites() async {
+  Future<List<StationMedia>> _loadFavorites(String? filterText) async {
     final favoriteStations = _radioLibraryService.favoriteStations;
 
-    return Future.wait(
-      favoriteStations.map((stationId) async {
-        StationMedia? media;
-        media = StationMedia.getCachedStationMedia(stationId);
-        if (media == null) {
-          final station = await _radioService.getStationByUUID(stationId);
-          if (station != null) {
-            media = StationMedia.fromStation(station);
-          }
+    final stations = <StationMedia>[];
+    for (final stationId in favoriteStations) {
+      StationMedia? media = StationMedia.getCachedStationMedia(stationId);
+      if (media == null) {
+        final station = await _radioService.getStationByUUID(stationId);
+        if (station != null) {
+          media = StationMedia.fromStation(station);
         }
-        return Future.value(media);
-      }),
-    );
+      }
+      if (media != null) {
+        stations.add(media);
+      }
+    }
+
+    return stations
+        .where(
+          (e) =>
+              e.title.toLowerCase().contains(filterText?.toLowerCase() ?? ''),
+        )
+        .toList();
   }
 
   Future<void> addFavoriteStation(String stationUuid) async {

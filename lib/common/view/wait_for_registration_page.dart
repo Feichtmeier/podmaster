@@ -38,7 +38,7 @@ class _WaitForRegistrationPageState extends State<WaitForRegistrationPage> {
   Widget build(BuildContext context) => FutureBuilder(
     future: _registrationReady,
     builder: (context, snapshot) => snapshot.hasError
-        ? App(
+        ? StaticApp(
             themeMode: ThemeMode.system,
             lightTheme: widget.lightTheme,
             darkTheme: widget.darkTheme,
@@ -54,7 +54,7 @@ class _WaitForRegistrationPageState extends State<WaitForRegistrationPage> {
             highContrastTheme: widget.highContrastTheme,
             child: const Home(),
           )
-        : App(
+        : StaticApp(
             themeMode: ThemeMode.system,
             lightTheme: widget.lightTheme,
             darkTheme: widget.darkTheme,

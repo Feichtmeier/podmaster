@@ -134,12 +134,13 @@ void registerDependencies() {
       ),
       dependsOn: [PlayerManager],
     )
+    ..registerLazySingleton<CollectionManager>(() => CollectionManager())
     ..registerLazySingleton<RadioManager>(
       () => RadioManager(
         radioLibraryService: di<RadioLibraryService>(),
         radioService: di<RadioService>(),
         searchManager: di<SearchManager>(),
+        collectionManager: di<CollectionManager>(),
       ),
-    )
-    ..registerLazySingleton<CollectionManager>(() => CollectionManager());
+    );
 }

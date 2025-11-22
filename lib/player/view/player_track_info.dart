@@ -90,8 +90,7 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
               ],
             ),
           ),
-          if (media is StationMedia)
-            RadioBrowserStationStarButton(media: media),
+          if (media is StationMedia) const RadioStationStarButton(),
         ],
       ),
     );
