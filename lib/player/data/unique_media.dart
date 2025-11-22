@@ -11,8 +11,8 @@ abstract class UniqueMedia extends Media {
     super.end,
   });
 
-  String get resource => super.uri;
-
+  // Since in case of radio stations, the URI may be given to multiple stations,
+  // we need a unique identifier that is not the URI.
   String get id;
 
   String? get title;

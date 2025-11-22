@@ -187,7 +187,7 @@ packages:
     source: hosted
     version: "1.19.1"
   command_it:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: command_it
       sha256: "6198e223b5a4d0e23281fd9514a67d264fb9239eeb3c1372176f49367aa2b198"
