@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
-import 'package:yaru/yaru.dart';
 
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
@@ -61,10 +60,6 @@ class _RadioFavoriteListTile extends StatelessWidget with WatchItMixin {
         ).data ??
         false;
 
-    final selectedColor = watchValue(
-      (PlayerManager p) => p.playerViewState.select((e) => e.color),
-    );
-
     return ListTile(
       title: Text(media.title ?? context.l10n.stations),
       subtitle: Text(media.genres.take(5).join(', ')),
@@ -72,9 +67,7 @@ class _RadioFavoriteListTile extends StatelessWidget with WatchItMixin {
       leading: RemoteMediaListTileImage(media: media),
       trailing: RadioBrowserStationStarButton(media: media),
       selected: isCurrentlyPlaying,
-      selectedColor: context.colorScheme.isLight
-          ? Colors.black
-          : selectedColor?.scale(lightness: 0.3, saturation: 0.3),
+      selectedColor: context.colorScheme.primary,
       onTap: () => di<PlayerManager>().setPlaylist([media]),
     );
   }
