@@ -54,13 +54,7 @@ class PlayerShuffleButton extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    final shuffle =
-        watchStream(
-          (PlayerManager p) => p.shuffleStream,
-          initialValue: di<PlayerManager>().shuffle,
-          preserveState: true,
-        ).data ==
-        true;
+    final shuffle = watchValue((PlayerManager p) => p.shuffle);
     return IconButton(
       style: playerButtonStyle,
       icon: Icon(Icons.shuffle, color: shuffle ? selectedColor : iconColor),
