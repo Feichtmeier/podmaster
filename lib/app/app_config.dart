@@ -1,4 +1,4 @@
 class AppConfig {
-  static const String appName = 'Podmaster';
-  static const String appId = 'org.feichtmeier.Podmaster';
+  static const String appName = 'MediaDojo';
+  static const String appId = 'dev.flutterit.Mediadojo';
 }

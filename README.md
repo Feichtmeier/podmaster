@@ -1,4 +1,4 @@
-# Podmaster
+# MediaDojo
 
 A podcast desktop player as an example app to showcase the power of [flutter_it](https://flutter-it.dev)
 
@@ -6,7 +6,7 @@ Disclaimer: the name might change in the future. :blush:
 
 ## What is this app about?
 
-Podmaster is a desktop app for listening to podcasts, built with Flutter. It serves as an example application to demonstrate how to use a set of packages (`flutter_it`, `get_it`, `command_it`, `watch_it`, `listen_it`) to build a well-structured Flutter application - without code-generation! :rocket:
+MediaDojo is a desktop app for listening to podcasts, built with Flutter. It serves as an example application to demonstrate how to use a set of packages (`flutter_it`, `get_it`, `command_it`, `watch_it`, `listen_it`) to build a well-structured Flutter application - without code-generation! :rocket:
 
 The app allows you to:
 - Search for new podcasts.
@@ -31,9 +31,9 @@ By using these packages together, you can create a clear separation of concerns 
 You can also just import the package [flutter_it](https://pub.dev/packages/flutter_it) which comes with all 4 packages included, if you need them all.
 ## get-it
 
-In Podmaster, `get-it` is used as a service locator to manage dependencies. This means we can register our services in a central place and access them from anywhere in the app without using `InheritedWidget` or passing them down the widget tree.
+In MediaDojo, `get-it` is used as a service locator to manage dependencies. This means we can register our services in a central place and access them from anywhere in the app without using `InheritedWidget` or passing them down the widget tree.
 
-Example classes registered in Podmaster:
+Example classes registered in MediaDojo:
 - `PodcastService`: For fetching podcast data from the internet.
 - `PodcastManager`: For using commands for the search and the loading of the feeds.
 - `PlayerManager`: For managing audio playback.
@@ -60,7 +60,7 @@ This has several advantages:
 ## watch-it
 
 `watch-it` is used for reactive state management. It allows our UI to "watch" for changes in our data models or services and automatically rebuild when a change occurs or register handlers for side effects.
-In Podmaster, we could use `watch-it` to:
+In MediaDojo, we could use `watch-it` to:
 
 - Watch the current playback position and update the progress bar in the UI.
 - Watch the list of downloaded episodes and update the download section in the UI.
@@ -76,7 +76,7 @@ listen_it gives ValueListenables super powers and provides two essential reactiv
 
 For more details, see the [documentation](https://flutter-it.dev/documentation/listen_it/listen_it).
 
-In Podmaster, `listen-it` could be used to:
+In MediaDojo, `listen-it` could be used to:
 
 - select a specific value from the PlayerState and react to changes in that value.
 

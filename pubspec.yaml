@@ -1,5 +1,5 @@
-name: podmaster
-description: "A new Flutter project."
+name: mediadojo
+description: "An entertainment app made with Flutter, Flutter-it, and MediaKit."
 publish_to: "none"
 version: 0.1.0
 
@@ -68,6 +68,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter
+  package_rename: ^1.10.0
 
 flutter:
   uses-material-design: true
@@ -76,10 +77,10 @@ flutter:
 flutter_launcher_icons:
   android: false
   ios: false
-  image_path: "assets/podmaster.png"
+  image_path: "assets/mediadojo.png"
   macos:
     generate: true
-    image_path: "assets/podmaster.png"
+    image_path: "assets/mediadojo.png"
 
 dependency_overrides:
   media_kit:
@@ -99,4 +100,15 @@ dependency_overrides:
       ref: d310049f24196250d876efb02b9ff56fa9ef5068
 
 assets:
-  - assets/podmaster.png
+  - assets/mediadojo.png
+
+package_rename_config:
+  linux:
+    app_name: MediaDojo
+    package_name: dev.flutterit.mediadojo
+    exe_name: mediadojo
+
+  macos:
+    app_name: MediaDojo
+    package_name: dev.flutterit.mediadojo
+    copyright_notice: Copyright © 2025 Frederik Feichtmeier. All rights reserved.
