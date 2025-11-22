@@ -4,7 +4,6 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:safe_change_notifier/safe_change_notifier.dart';
 
 import '../common/logging.dart';
 import '../extensions/color_x.dart';
@@ -43,7 +42,7 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
   final VideoController _controller;
   VideoController get videoController => _controller;
 
-  final playerViewState = SafeValueNotifier<PlayerViewState>(
+  final playerViewState = ValueNotifier<PlayerViewState>(
     const PlayerViewState(fullMode: false, showPlayerExplorer: true),
   );
 
@@ -99,8 +98,8 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
   Player get player => _player;
 
   StreamSubscription<Duration>? _positionSubscription;
-  final _position = SafeValueNotifier(Duration.zero);
-  SafeValueNotifier<Duration> get position => _position;
+  final _position = ValueNotifier(Duration.zero);
+  ValueNotifier<Duration> get position => _position;
   void _setPosition(Duration value) {
     playbackState.add(playbackState.value.copyWith(updatePosition: value));
     if (value.inSeconds == _position.value.inSeconds) return;
@@ -108,16 +107,16 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
   }
 
   StreamSubscription<Duration>? _bufferedSubscription;
-  final _buffer = SafeValueNotifier(Duration.zero);
-  SafeValueNotifier<Duration> get buffer => _buffer;
+  final _buffer = ValueNotifier(Duration.zero);
+  ValueNotifier<Duration> get buffer => _buffer;
   void _setBuffer(Duration value) {
     if (value.inSeconds == _buffer.value.inSeconds) return;
     _buffer.value = value;
   }
 
   StreamSubscription<Duration>? _durationSubscription;
-  final _duration = SafeValueNotifier<Duration>(Duration.zero);
-  SafeValueNotifier<Duration> get duration => _duration;
+  final _duration = ValueNotifier<Duration>(Duration.zero);
+  ValueNotifier<Duration> get duration => _duration;
   void _setDuration(Duration d) {
     if (mediaItem.value != null) {
       mediaItem.add(mediaItem.value!.copyWith(duration: d));
@@ -200,7 +199,7 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
 
   Stream<PlaylistMode> get playlistModeStream => _player.stream.playlistMode;
 
-  final shuffle = SafeValueNotifier<bool>(false);
+  final shuffle = ValueNotifier<bool>(false);
   var _oldPlaylistMedias = <UniqueMedia>[];
   void toggleShuffle() {
     shuffle.value = !shuffle.value;

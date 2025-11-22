@@ -1,5 +1,5 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_it/flutter_it.dart';
-import 'package:safe_change_notifier/safe_change_notifier.dart';
 
 import '../common/media_type.dart';
 
@@ -9,5 +9,5 @@ class SearchManager {
   }
 
   late Command<String, String> textChangedCommand;
-  final searchTypeNotifier = SafeValueNotifier<MediaType>(MediaType.podcast);
+  final searchTypeNotifier = ValueNotifier<MediaType>(MediaType.podcast);
 }

@@ -28,6 +28,7 @@ dependencies:
   flutter_it: ^2.0.0
   flutter_localizations:
     sdk: flutter
+  flutter_tabler_icons: ^1.43.0
   flutter_widget_from_html_core: ^0.17.0
   future_loading_dialog: ^0.3.0
   html: ^0.15.6
@@ -55,7 +56,6 @@ dependencies:
       ref: 7d22aba2841e522bf4c140e60e4a60f33c8f5aa6
   podcast_search: ^0.7.12
   radio_browser_api: ^2.0.0+1
-  safe_change_notifier: ^0.4.0+1
   shared_preferences: ^2.5.3
   synchronized: ^3.4.0
   system_theme: ^3.1.2

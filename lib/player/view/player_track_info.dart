@@ -4,6 +4,8 @@ import 'package:flutter_it/flutter_it.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/duration_x.dart';
+import '../../radio/view/radio_browser_station_star_button.dart';
+import '../../search/copy_to_clipboard_content.dart';
 import '../data/station_media.dart';
 import '../player_manager.dart';
 
@@ -41,43 +43,57 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
       (PlayerManager p) => p.playerViewState.select((e) => e.remoteSourceTitle),
     );
 
-    return Row(
-      spacing: kSmallPadding,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: crossAxisAlignment,
-            children: [
-              Text(
-                (media is! StationMedia ? media.collectionName : media.title) ??
-                    'Unknown',
-                maxLines: 1,
-                style: (artistStyle ?? textTheme.labelSmall)?.copyWith(
-                  color: textColor,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Text(
-                (media is! StationMedia ? media.title : remoteTitle) ??
-                    media.title ??
-                    'Unknown',
-                maxLines: 1,
-                style: (titleStyle ?? textTheme.labelSmall)?.copyWith(
-                  color: textColor,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              PlayerTrackProgressTimeText(
-                durationStyle: durationStyle,
-                textColor: textColor,
-              ),
-            ],
+    return InkWell(
+      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: CopyClipboardContent(
+            text: media is StationMedia && remoteTitle != null
+                ? remoteTitle
+                : '${media.artist ?? 'Unknown'} - ${media.title ?? 'Unknown'}',
           ),
         ),
-        // if (media is StationMedia) RadioBrowserStationStarButton(media: media),
-      ],
+      ),
+      child: Row(
+        spacing: kSmallPadding,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: crossAxisAlignment,
+              children: [
+                Text(
+                  (media is! StationMedia
+                          ? media.collectionName
+                          : media.title) ??
+                      'Unknown',
+                  maxLines: 1,
+                  style: (artistStyle ?? textTheme.labelSmall)?.copyWith(
+                    color: textColor,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  (media is! StationMedia ? media.title : remoteTitle) ??
+                      media.title ??
+                      'Unknown',
+                  maxLines: 1,
+                  style: (titleStyle ?? textTheme.labelSmall)?.copyWith(
+                    color: textColor,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                PlayerTrackProgressTimeText(
+                  durationStyle: durationStyle,
+                  textColor: textColor,
+                ),
+              ],
+            ),
+          ),
+          if (media is StationMedia)
+            RadioBrowserStationStarButton(media: media),
+        ],
+      ),
     );
   }
 }
