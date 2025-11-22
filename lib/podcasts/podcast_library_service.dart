@@ -20,6 +20,162 @@ class PodcastLibraryService {
   ///
   /// Podcasts
   ///
+
+  Set<String> get _podcasts =>
+      _sharedPreferences.getStringList(SPKeys.podcastFeedUrls)?.toSet() ?? {};
+  bool isPodcastSubscribed(String feedUrl) => _podcasts.contains(feedUrl);
+  List<String> get podcastFeedUrls => _podcasts.toList();
+  Set<String> get podcasts => _podcasts;
+  int get podcastsLength => _podcasts.length;
+
+  // Adding and removing Podcasts
+  // ------------------
+  Future<void> addPodcasts(
+    List<
+      ({
+        String feedUrl,
+        String? imageUrl,
+        String name,
+        String artist,
+        List<String> genreList,
+      })
+    >
+    podcasts,
+  ) async {
+    if (podcasts.isEmpty) return;
+    final newList = List<String>.from(_podcasts);
+    for (var p in podcasts) {
+      if (!newList.contains(p.feedUrl)) {
+        await _addPodcastMetadata(
+          p.imageUrl,
+          p.feedUrl,
+          p.name,
+          p.artist,
+          p.genreList,
+        );
+
+        newList.add(p.feedUrl);
+      }
+    }
+    await _sharedPreferences
+        .setStringList(SPKeys.podcastFeedUrls, newList)
+        .then(notify);
+  }
+
+  void removePodcast(String feedUrl) {
+    if (!isPodcastSubscribed(feedUrl)) return;
+    final newList = List<String>.from(_podcasts)..remove(feedUrl);
+    _sharedPreferences
+        .setStringList(SPKeys.podcastFeedUrls, newList)
+        .then(notify);
+    _removeFeedWithDownload(feedUrl);
+    removeSubscribedPodcastImage(feedUrl);
+    removeSubscribedPodcastName(feedUrl);
+    removeSubscribedPodcastArtist(feedUrl);
+  }
+
+  Future<void> removeAllPodcasts() async {
+    for (final feedUrl in _podcasts) {
+      removeSubscribedPodcastImage(feedUrl);
+      removeSubscribedPodcastName(feedUrl);
+      removeSubscribedPodcastArtist(feedUrl);
+      _removePodcastLastUpdated(feedUrl);
+    }
+    _podcasts.clear();
+    _podcastUpdates?.clear();
+    await _sharedPreferences
+        .setStringList(SPKeys.podcastFeedUrls, [])
+        .then(notify);
+  }
+
+  Future<void> addPodcast({
+    required String feedUrl,
+    required String? imageUrl,
+    required String name,
+    required String artist,
+    required List<String> genreList,
+  }) async {
+    if (isPodcastSubscribed(feedUrl)) return;
+
+    await _addPodcastMetadata(imageUrl, feedUrl, name, artist, genreList);
+
+    await _sharedPreferences
+        .setStringList(SPKeys.podcastFeedUrls, [
+          ...List<String>.from(_podcasts),
+          feedUrl,
+        ])
+        .then(notify);
+  }
+
+  // Podcast Metadata
+  // ------------------
+  Future<void> _addPodcastMetadata(
+    String? imageUrl,
+    String feedUrl,
+    String name,
+    String artist,
+    List<String> genreList,
+  ) async {
+    if (imageUrl != null) {
+      addSubscribedPodcastImage(feedUrl: feedUrl, imageUrl: imageUrl);
+    }
+    addSubscribedPodcastName(feedUrl: feedUrl, name: name);
+    addSubscribedPodcastArtist(feedUrl: feedUrl, artist: artist);
+    addSubscribedPodcastGenreList(feedUrl: feedUrl, genreList: genreList);
+    await addPodcastLastUpdated(
+      feedUrl: feedUrl,
+      timestamp: DateTime.now().podcastTimeStamp,
+    );
+  }
+
+  // Image URL
+  String? getSubscribedPodcastImage(String feedUrl) =>
+      _sharedPreferences.getString(feedUrl + SPKeys.podcastImageUrlSuffix);
+  void addSubscribedPodcastImage({
+    required String feedUrl,
+    required String imageUrl,
+  }) => _sharedPreferences
+      .setString(feedUrl + SPKeys.podcastImageUrlSuffix, imageUrl)
+      .then(notify);
+  void removeSubscribedPodcastImage(String feedUrl) =>
+      _sharedPreferences.remove(feedUrl + SPKeys.podcastImageUrlSuffix);
+
+  // Name
+  String? getSubscribedPodcastName(String feedUrl) =>
+      _sharedPreferences.getString(feedUrl + SPKeys.podcastNameSuffix);
+  void addSubscribedPodcastName({
+    required String feedUrl,
+    required String name,
+  }) => _sharedPreferences.setString(feedUrl + SPKeys.podcastNameSuffix, name);
+  void removeSubscribedPodcastName(String feedUrl) =>
+      _sharedPreferences.remove(feedUrl + SPKeys.podcastNameSuffix);
+
+  // Artist
+  String? getSubscribedPodcastArtist(String feedUrl) =>
+      _sharedPreferences.getString(feedUrl + SPKeys.podcastArtistSuffix);
+  void addSubscribedPodcastArtist({
+    required String feedUrl,
+    required String artist,
+  }) => _sharedPreferences
+      .setString(feedUrl + SPKeys.podcastArtistSuffix, artist)
+      .then(notify);
+  void removeSubscribedPodcastArtist(String feedUrl) =>
+      _sharedPreferences.remove(feedUrl + SPKeys.podcastArtistSuffix);
+
+  // Genre List
+  List<String>? getSubScribedPodcastGenreList(String feedUrl) =>
+      _sharedPreferences.getStringList(feedUrl + SPKeys.podcastGenreListSuffix);
+  void addSubscribedPodcastGenreList({
+    required String feedUrl,
+    required List<String> genreList,
+  }) => _sharedPreferences
+      .setStringList(feedUrl + SPKeys.podcastGenreListSuffix, genreList)
+      .then(notify);
+  void removeSubscribedPodcastGenreList(String feedUrl) =>
+      _sharedPreferences.remove(feedUrl + SPKeys.podcastGenreListSuffix);
+
+  // Podcast Downloads
+  // ------------------
   String? getDownload(String? url) => url == null
       ? null
       : _sharedPreferences.getString(
@@ -104,146 +260,8 @@ class PodcastLibraryService {
         .then(notify);
   }
 
-  Set<String> get _podcasts =>
-      _sharedPreferences.getStringList(SPKeys.podcastFeedUrls)?.toSet() ?? {};
-  bool isPodcastSubscribed(String feedUrl) => _podcasts.contains(feedUrl);
-  List<String> get podcastFeedUrls => _podcasts.toList();
-  Set<String> get podcasts => _podcasts;
-  int get podcastsLength => _podcasts.length;
-  String? getSubscribedPodcastImage(String feedUrl) =>
-      _sharedPreferences.getString(feedUrl + SPKeys.podcastImageUrlSuffix);
-  void addSubscribedPodcastImage({
-    required String feedUrl,
-    required String imageUrl,
-  }) => _sharedPreferences
-      .setString(feedUrl + SPKeys.podcastImageUrlSuffix, imageUrl)
-      .then(notify);
-  void removeSubscribedPodcastImage(String feedUrl) =>
-      _sharedPreferences.remove(feedUrl + SPKeys.podcastImageUrlSuffix);
-  String? getSubscribedPodcastName(String feedUrl) =>
-      _sharedPreferences.getString(feedUrl + SPKeys.podcastNameSuffix);
-  void addSubscribedPodcastName({
-    required String feedUrl,
-    required String name,
-  }) => _sharedPreferences.setString(feedUrl + SPKeys.podcastNameSuffix, name);
-  void removeSubscribedPodcastName(String feedUrl) =>
-      _sharedPreferences.remove(feedUrl + SPKeys.podcastNameSuffix);
-  String? getSubscribedPodcastArtist(String feedUrl) =>
-      _sharedPreferences.getString(feedUrl + SPKeys.podcastArtistSuffix);
-  void addSubscribedPodcastArtist({
-    required String feedUrl,
-    required String artist,
-  }) => _sharedPreferences
-      .setString(feedUrl + SPKeys.podcastArtistSuffix, artist)
-      .then(notify);
-  void removeSubscribedPodcastArtist(String feedUrl) =>
-      _sharedPreferences.remove(feedUrl + SPKeys.podcastArtistSuffix);
-  List<String>? getSubScribedPodcastGenreList(String feedUrl) =>
-      _sharedPreferences.getStringList(feedUrl + SPKeys.podcastGenreListSuffix);
-  void addSubscribedPodcastGenreList({
-    required String feedUrl,
-    required List<String> genreList,
-  }) => _sharedPreferences
-      .setStringList(feedUrl + SPKeys.podcastGenreListSuffix, genreList)
-      .then(notify);
-  void removeSubscribedPodcastGenreList(String feedUrl) =>
-      _sharedPreferences.remove(feedUrl + SPKeys.podcastGenreListSuffix);
-
-  Future<void> addPodcast({
-    required String feedUrl,
-    required String? imageUrl,
-    required String name,
-    required String artist,
-    required List<String> genreList,
-  }) async {
-    if (isPodcastSubscribed(feedUrl)) return;
-
-    await persistPodcastMetadata(imageUrl, feedUrl, name, artist, genreList);
-
-    await _sharedPreferences
-        .setStringList(SPKeys.podcastFeedUrls, [
-          ...List<String>.from(_podcasts),
-          feedUrl,
-        ])
-        .then(notify);
-  }
-
-  Future<void> persistPodcastMetadata(
-    String? imageUrl,
-    String feedUrl,
-    String name,
-    String artist,
-    List<String> genreList,
-  ) async {
-    if (imageUrl != null) {
-      addSubscribedPodcastImage(feedUrl: feedUrl, imageUrl: imageUrl);
-    }
-    addSubscribedPodcastName(feedUrl: feedUrl, name: name);
-    addSubscribedPodcastArtist(feedUrl: feedUrl, artist: artist);
-    addSubscribedPodcastGenreList(feedUrl: feedUrl, genreList: genreList);
-    await addPodcastLastUpdated(
-      feedUrl: feedUrl,
-      timestamp: DateTime.now().podcastTimeStamp,
-    );
-  }
-
-  Future<void> addPodcasts(
-    List<
-      ({
-        String feedUrl,
-        String? imageUrl,
-        String name,
-        String artist,
-        List<String> genreList,
-      })
-    >
-    podcasts,
-  ) async {
-    if (podcasts.isEmpty) return;
-    final newList = List<String>.from(_podcasts);
-    for (var p in podcasts) {
-      if (!newList.contains(p.feedUrl)) {
-        await persistPodcastMetadata(
-          p.imageUrl,
-          p.feedUrl,
-          p.name,
-          p.artist,
-          p.genreList,
-        );
-
-        newList.add(p.feedUrl);
-      }
-    }
-    await _sharedPreferences
-        .setStringList(SPKeys.podcastFeedUrls, newList)
-        .then(notify);
-  }
-
-  bool showPodcastAscending(String feedUrl) =>
-      _sharedPreferences.getBool(SPKeys.ascendingFeeds + feedUrl) ?? false;
-
-  Future<void> _addAscendingPodcast(String feedUrl) async {
-    await _sharedPreferences
-        .setBool(SPKeys.ascendingFeeds + feedUrl, true)
-        .then((_) => _propertiesChangedController.add(true));
-  }
-
-  Future<void> _removeAscendingPodcast(String feedUrl) async =>
-      _sharedPreferences
-          .remove(SPKeys.ascendingFeeds + feedUrl)
-          .then((_) => _propertiesChangedController.add(true));
-
-  Future<void> reorderPodcast({
-    required String feedUrl,
-    required bool ascending,
-  }) async {
-    if (ascending) {
-      await _addAscendingPodcast(feedUrl);
-    } else {
-      await _removeAscendingPodcast(feedUrl);
-    }
-  }
-
+  // Podcast Updates
+  // ------------------
   Set<String>? get _podcastUpdates =>
       _sharedPreferences.getStringList(SPKeys.podcastsWithUpdates)?.toSet();
 
@@ -288,29 +306,30 @@ class PodcastLibraryService {
         .then((_) => _propertiesChangedController.add(true));
   }
 
-  void removePodcast(String feedUrl) {
-    if (!isPodcastSubscribed(feedUrl)) return;
-    final newList = List<String>.from(_podcasts)..remove(feedUrl);
-    _sharedPreferences
-        .setStringList(SPKeys.podcastFeedUrls, newList)
-        .then(notify);
-    _removeFeedWithDownload(feedUrl);
-    removeSubscribedPodcastImage(feedUrl);
-    removeSubscribedPodcastName(feedUrl);
-    removeSubscribedPodcastArtist(feedUrl);
+  // Podcast Episode Ordering
+  // ------------------
+  bool showPodcastAscending(String feedUrl) =>
+      _sharedPreferences.getBool(SPKeys.ascendingFeeds + feedUrl) ?? false;
+
+  Future<void> _addAscendingPodcast(String feedUrl) async {
+    await _sharedPreferences
+        .setBool(SPKeys.ascendingFeeds + feedUrl, true)
+        .then((_) => _propertiesChangedController.add(true));
   }
 
-  Future<void> removeAllPodcasts() async {
-    for (final feedUrl in _podcasts) {
-      removeSubscribedPodcastImage(feedUrl);
-      removeSubscribedPodcastName(feedUrl);
-      removeSubscribedPodcastArtist(feedUrl);
-      _removePodcastLastUpdated(feedUrl);
+  Future<void> _removeAscendingPodcast(String feedUrl) async =>
+      _sharedPreferences
+          .remove(SPKeys.ascendingFeeds + feedUrl)
+          .then((_) => _propertiesChangedController.add(true));
+
+  Future<void> reorderPodcast({
+    required String feedUrl,
+    required bool ascending,
+  }) async {
+    if (ascending) {
+      await _addAscendingPodcast(feedUrl);
+    } else {
+      await _removeAscendingPodcast(feedUrl);
     }
-    _podcasts.clear();
-    _podcastUpdates?.clear();
-    await _sharedPreferences
-        .setStringList(SPKeys.podcastFeedUrls, [])
-        .then(notify);
   }
 }
