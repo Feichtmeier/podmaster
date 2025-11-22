@@ -32,6 +32,8 @@ class RadioManager {
       (filterText) => _loadMedia(name: filterText),
       initialValue: [],
     );
+
+    favoriteStationsCommand.run();
   }
 
   final RadioLibraryService _radioLibraryService;

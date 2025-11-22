@@ -14,37 +14,35 @@ class RadioFavoritesList extends StatelessWidget with WatchItMixin {
   const RadioFavoritesList({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    callOnce((_) => di<RadioManager>().favoriteStationsCommand.run());
-    return watchValue(
-      (RadioManager s) => s.favoriteStationsCommand.results,
-    ).toWidget(
-      onData: (favorites, _) => ListView.builder(
-        padding: const EdgeInsets.only(
-          top: kSmallPadding,
-          left: kBigPadding,
-          right: kBigPadding,
+  Widget build(BuildContext context) =>
+      watchValue(
+        (RadioManager s) => s.favoriteStationsCommand.results,
+      ).toWidget(
+        onData: (favorites, _) => ListView.builder(
+          padding: const EdgeInsets.only(
+            top: kSmallPadding,
+            left: kBigPadding,
+            right: kBigPadding,
+          ),
+          itemCount: favorites.length,
+          itemBuilder: (context, index) {
+            final media = favorites[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: kSmallPadding),
+              child: _RadioFavoriteListTile(
+                key: ValueKey(media.id),
+                media: media,
+              ),
+            );
+          },
         ),
-        itemCount: favorites.length,
-        itemBuilder: (context, index) {
-          final media = favorites[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: kSmallPadding),
-            child: _RadioFavoriteListTile(
-              key: ValueKey(media.id),
-              media: media,
-            ),
-          );
-        },
-      ),
-      whileRunning: (_, _) =>
-          const Center(child: CircularProgressIndicator.adaptive()),
-      onError: (error, _, _) => RadioHostNotConnectedContent(
-        message: 'Error: $error',
-        onRetry: di<RadioManager>().favoriteStationsCommand.run,
-      ),
-    );
-  }
+        whileRunning: (_, _) =>
+            const Center(child: CircularProgressIndicator.adaptive()),
+        onError: (error, _, _) => RadioHostNotConnectedContent(
+          message: 'Error: $error',
+          onRetry: di<RadioManager>().favoriteStationsCommand.run,
+        ),
+      );
 }
 
 class _RadioFavoriteListTile extends StatelessWidget with WatchItMixin {

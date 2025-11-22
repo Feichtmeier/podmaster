@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../extensions/date_time_x.dart';
 import '../extensions/shared_preferences_x.dart';
+import 'data/podcast_metadata.dart';
 
 class PodcastLibraryService {
   PodcastLibraryService({required SharedPreferences sharedPreferences})
@@ -12,6 +13,9 @@ class PodcastLibraryService {
   int? get podcastUpdatesLength => _podcastUpdates?.length;
 
   final SharedPreferences _sharedPreferences;
+
+  // This stream is currently used for downloads
+  // TODO: replace with download commmand in DownloadManager
   final _propertiesChangedController = StreamController<bool>.broadcast();
   Stream<bool> get propertiesChanged => _propertiesChangedController.stream;
   Future<void> notify(bool value) async =>
@@ -24,12 +28,9 @@ class PodcastLibraryService {
   Set<String> get _podcasts =>
       _sharedPreferences.getStringList(SPKeys.podcastFeedUrls)?.toSet() ?? {};
 
-  Stream<Set<String>> getPodcastStream(String filterText) =>
-      propertiesChanged.map((e) => getFilteredPodcasts(filterText));
-
-  Set<String> getFilteredPodcasts(String filterText) {
+  Set<String> _getFilteredPodcasts(String? filterText) {
     return podcasts.where((feedUrl) {
-      if (filterText.isEmpty) return true;
+      if (filterText == null || filterText.isEmpty) return true;
       final name = getSubscribedPodcastName(feedUrl);
       final artist = getSubscribedPodcastArtist(feedUrl);
       return (name != null &&
@@ -39,6 +40,16 @@ class PodcastLibraryService {
     }).toSet();
   }
 
+  List<PodcastMetadata> getFilteredPodcastsWithMetadata(String? filterText) {
+    final filteredFeedUrls = _getFilteredPodcasts(filterText);
+    final result = <PodcastMetadata>[];
+    for (final feedUrl in filteredFeedUrls) {
+      final metadata = getPodcastMetadata(feedUrl);
+      result.add(metadata);
+    }
+    return result;
+  }
+
   bool isPodcastSubscribed(String feedUrl) => _podcasts.contains(feedUrl);
   List<String> get podcastFeedUrls => _podcasts.toList();
   Set<String> get podcasts => _podcasts;
@@ -46,48 +57,37 @@ class PodcastLibraryService {
 
   // Adding and removing Podcasts
   // ------------------
-  Future<void> addPodcasts(
-    List<
-      ({
-        String feedUrl,
-        String? imageUrl,
-        String name,
-        String artist,
-        List<String> genreList,
-      })
-    >
-    podcasts,
-  ) async {
-    if (podcasts.isEmpty) return;
+
+  Future<void> addPodcast(PodcastMetadata metadata) async {
+    if (isPodcastSubscribed(metadata.feedUrl)) return;
+    await _addPodcastMetadata(metadata);
+    await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, [
+      ...List<String>.from(_podcasts),
+      metadata.feedUrl,
+    ]);
+  }
+
+  Future<void> addPodcasts(List<PodcastMetadata> metadata) async {
+    if (metadata.isEmpty) return;
     final newList = List<String>.from(_podcasts);
-    for (var p in podcasts) {
+    for (var p in metadata) {
       if (!newList.contains(p.feedUrl)) {
-        await _addPodcastMetadata(
-          p.imageUrl,
-          p.feedUrl,
-          p.name,
-          p.artist,
-          p.genreList,
-        );
+        await _addPodcastMetadata(p);
 
         newList.add(p.feedUrl);
       }
     }
-    await _sharedPreferences
-        .setStringList(SPKeys.podcastFeedUrls, newList)
-        .then(notify);
+    await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, newList);
   }
 
-  void removePodcast(String feedUrl) {
+  Future<void> removePodcast(String feedUrl) async {
     if (!isPodcastSubscribed(feedUrl)) return;
     final newList = List<String>.from(_podcasts)..remove(feedUrl);
-    _sharedPreferences
-        .setStringList(SPKeys.podcastFeedUrls, newList)
-        .then(notify);
-    _removeFeedWithDownload(feedUrl);
+    await _removeFeedWithDownload(feedUrl);
     removeSubscribedPodcastImage(feedUrl);
     removeSubscribedPodcastName(feedUrl);
     removeSubscribedPodcastArtist(feedUrl);
+    await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, newList);
   }
 
   Future<void> removeAllPodcasts() async {
@@ -104,45 +104,43 @@ class PodcastLibraryService {
         .then(notify);
   }
 
-  Future<void> addPodcast({
-    required String feedUrl,
-    required String? imageUrl,
-    required String name,
-    required String artist,
-    required List<String> genreList,
-  }) async {
-    if (isPodcastSubscribed(feedUrl)) return;
-
-    await _addPodcastMetadata(imageUrl, feedUrl, name, artist, genreList);
-
-    await _sharedPreferences
-        .setStringList(SPKeys.podcastFeedUrls, [
-          ...List<String>.from(_podcasts),
-          feedUrl,
-        ])
-        .then(notify);
-  }
-
   // Podcast Metadata
   // ------------------
-  Future<void> _addPodcastMetadata(
-    String? imageUrl,
-    String feedUrl,
-    String name,
-    String artist,
-    List<String> genreList,
-  ) async {
-    if (imageUrl != null) {
-      addSubscribedPodcastImage(feedUrl: feedUrl, imageUrl: imageUrl);
+  Future<void> _addPodcastMetadata(PodcastMetadata metadata) async {
+    if (metadata.imageUrl != null) {
+      addSubscribedPodcastImage(
+        feedUrl: metadata.feedUrl,
+        imageUrl: metadata.imageUrl!,
+      );
     }
-    addSubscribedPodcastName(feedUrl: feedUrl, name: name);
-    addSubscribedPodcastArtist(feedUrl: feedUrl, artist: artist);
-    addSubscribedPodcastGenreList(feedUrl: feedUrl, genreList: genreList);
+    if (metadata.name != null) {
+      addSubscribedPodcastName(feedUrl: metadata.feedUrl, name: metadata.name!);
+    }
+    if (metadata.artist != null) {
+      addSubscribedPodcastArtist(
+        feedUrl: metadata.feedUrl,
+        artist: metadata.artist!,
+      );
+    }
+    if (metadata.genreList != null) {
+      addSubscribedPodcastGenreList(
+        feedUrl: metadata.feedUrl,
+        genreList: metadata.genreList!,
+      );
+    }
     await addPodcastLastUpdated(
-      feedUrl: feedUrl,
+      feedUrl: metadata.feedUrl,
       timestamp: DateTime.now().podcastTimeStamp,
     );
   }
+
+  PodcastMetadata getPodcastMetadata(String feedUrl) => PodcastMetadata(
+    feedUrl: feedUrl,
+    imageUrl: getSubscribedPodcastImage(feedUrl),
+    name: getSubscribedPodcastName(feedUrl),
+    artist: getSubscribedPodcastArtist(feedUrl),
+    genreList: getSubScribedPodcastGenreList(feedUrl),
+  );
 
   // Image URL
   String? getSubscribedPodcastImage(String feedUrl) =>
@@ -150,9 +148,10 @@ class PodcastLibraryService {
   void addSubscribedPodcastImage({
     required String feedUrl,
     required String imageUrl,
-  }) => _sharedPreferences
-      .setString(feedUrl + SPKeys.podcastImageUrlSuffix, imageUrl)
-      .then(notify);
+  }) => _sharedPreferences.setString(
+    feedUrl + SPKeys.podcastImageUrlSuffix,
+    imageUrl,
+  );
   void removeSubscribedPodcastImage(String feedUrl) =>
       _sharedPreferences.remove(feedUrl + SPKeys.podcastImageUrlSuffix);
 
@@ -172,9 +171,10 @@ class PodcastLibraryService {
   void addSubscribedPodcastArtist({
     required String feedUrl,
     required String artist,
-  }) => _sharedPreferences
-      .setString(feedUrl + SPKeys.podcastArtistSuffix, artist)
-      .then(notify);
+  }) => _sharedPreferences.setString(
+    feedUrl + SPKeys.podcastArtistSuffix,
+    artist,
+  );
   void removeSubscribedPodcastArtist(String feedUrl) =>
       _sharedPreferences.remove(feedUrl + SPKeys.podcastArtistSuffix);
 
@@ -184,9 +184,10 @@ class PodcastLibraryService {
   void addSubscribedPodcastGenreList({
     required String feedUrl,
     required List<String> genreList,
-  }) => _sharedPreferences
-      .setStringList(feedUrl + SPKeys.podcastGenreListSuffix, genreList)
-      .then(notify);
+  }) => _sharedPreferences.setStringList(
+    feedUrl + SPKeys.podcastGenreListSuffix,
+    genreList,
+  );
   void removeSubscribedPodcastGenreList(String feedUrl) =>
       _sharedPreferences.remove(feedUrl + SPKeys.podcastGenreListSuffix);
 
@@ -284,13 +285,13 @@ class PodcastLibraryService {
   Future<void> addPodcastLastUpdated({
     required String feedUrl,
     required String timestamp,
-  }) async => _sharedPreferences
-      .setString(feedUrl + SPKeys.podcastLastUpdatedSuffix, timestamp)
-      .then(notify);
+  }) async => _sharedPreferences.setString(
+    feedUrl + SPKeys.podcastLastUpdatedSuffix,
+    timestamp,
+  );
 
-  void _removePodcastLastUpdated(String feedUrl) => _sharedPreferences
-      .remove(feedUrl + SPKeys.podcastLastUpdatedSuffix)
-      .then(notify);
+  void _removePodcastLastUpdated(String feedUrl) =>
+      _sharedPreferences.remove(feedUrl + SPKeys.podcastLastUpdatedSuffix);
 
   String? getPodcastLastUpdated(String feedUrl) =>
       _sharedPreferences.getString(feedUrl + SPKeys.podcastLastUpdatedSuffix);
