@@ -160,10 +160,10 @@ class PodcastService {
     final url = feedUrl ?? item!.feedUrl!;
 
     if (_episodeCache.containsKey(url) && loadFromCache) {
-      if (_episodeCache[url]?.firstOrNull?.artUrl != null) {
+      if (item?.bestArtworkUrl != null) {
         _libraryService.addSubscribedPodcastImage(
           feedUrl: url,
-          imageUrl: _episodeCache[url]!.firstOrNull!.artUrl!,
+          imageUrl: item!.bestArtworkUrl!,
         );
       }
       return _episodeCache[url]!;
