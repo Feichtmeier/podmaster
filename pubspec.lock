@@ -428,6 +428,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.32"
+  flutter_tabler_icons:
+    dependency: "direct main"
+    description:
+      name: flutter_tabler_icons
+      sha256: "657c2201e12fa9121a12ddb4edb74d69290f803868eb6526f04102e6d49ec882"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.43.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -946,14 +954,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.28.0"
-  safe_change_notifier:
-    dependency: "direct main"
-    description:
-      name: safe_change_notifier
-      sha256: de542ff5b3dc2bff1b4ae3349992c22c7162e2c87c6c0e52db7ae9402a2e15d0
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.4.0+1"
   safe_local_storage:
     dependency: transitive
     description:
@@ -1135,14 +1135,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.12.1"
-  state_notifier:
-    dependency: transitive
-    description:
-      name: state_notifier
-      sha256: b8677376aa54f2d7c58280d5a007f9e8774f1968d1fb1c096adcb4792fba29bb
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   stream_channel:
     dependency: transitive
     description:

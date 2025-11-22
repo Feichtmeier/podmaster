@@ -17,7 +17,7 @@ const kShowSideBarThreshHold = 700.0;
 
 const kBottomPlayerHeight = 80.0;
 
-const kPlayerInfoWidth = 160.0;
+const kPlayerInfoWidth = 180.0;
 
 const kPlayerTrackHeight = 4.0;
 

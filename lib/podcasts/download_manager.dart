@@ -4,14 +4,13 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'package:safe_change_notifier/safe_change_notifier.dart';
 
 import '../extensions/date_time_x.dart';
 import '../player/data/episode_media.dart';
 import '../settings/settings_service.dart';
 import 'podcast_library_service.dart';
 
-class DownloadManager extends SafeChangeNotifier {
+class DownloadManager extends ChangeNotifier {
   DownloadManager({
     required PodcastLibraryService libraryService,
     required SettingsService settingsService,
