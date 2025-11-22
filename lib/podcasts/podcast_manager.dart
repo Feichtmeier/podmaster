@@ -4,6 +4,7 @@ import 'package:podcast_search/podcast_search.dart';
 import '../common/logging.dart';
 import '../extensions/country_x.dart';
 import '../player/data/episode_media.dart';
+import '../search/search_manager.dart';
 import 'podcast_service.dart';
 
 /// Manages podcast search and episode fetching.
@@ -12,8 +13,10 @@ import 'podcast_service.dart';
 /// entire app lifetime. Commands and subscriptions don't need explicit disposal
 /// as they're automatically cleaned up when the app process terminates.
 class PodcastManager {
-  PodcastManager({required PodcastService podcastService})
-    : _podcastService = podcastService {
+  PodcastManager({
+    required PodcastService podcastService,
+    required SearchManager searchManager,
+  }) : _podcastService = podcastService {
     Command.globalExceptionHandler = (e, s) {
       printMessageInDebugMode(e.error, s);
     };
@@ -25,10 +28,9 @@ class PodcastManager {
       ),
       initialValue: SearchResult(items: []),
     );
-    textChangedCommand = Command.createSync((s) => s, initialValue: '');
 
     // Subscription doesn't need disposal - manager lives for app lifetime
-    textChangedCommand
+    searchManager.textChangedCommand
         .debounce(const Duration(milliseconds: 500))
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
@@ -40,7 +42,6 @@ class PodcastManager {
   }
 
   final PodcastService _podcastService;
-  late Command<String, String> textChangedCommand;
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
 }

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:yaru/yaru.dart';
 
+import '../collection/view/collection_view.dart';
 import '../common/view/ui_constants.dart';
 import '../extensions/build_context_x.dart';
 import '../player/player_manager.dart';
 import '../player/view/player_full_view.dart';
 import '../player/view/player_view.dart';
 import '../podcasts/download_manager.dart';
-import '../podcasts/view/podcast_collection_view.dart';
-import '../podcasts/view/podcast_search_view.dart';
+import '../search/view/search_view.dart';
 import '../settings/view/settings_dialog.dart';
 
 class Home extends StatelessWidget with WatchItMixin {
@@ -55,9 +55,7 @@ class Home extends StatelessWidget with WatchItMixin {
             ),
           ],
         ),
-        body: const TabBarView(
-          children: [PodcastSearchViewNew(), PodcastCollectionView()],
-        ),
+        body: const TabBarView(children: [SearchView(), CollectionView()]),
         bottomNavigationBar: const PlayerView(),
       ),
     );
