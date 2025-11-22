@@ -15,15 +15,11 @@ class SettingsManager {
     required ExternalPathService externalPathService,
   }) {
     downloadsDirCommand = Command.createAsyncNoParam(() async {
-      try {
-        final path = await externalPathService.getPathOfDirectory();
-        if (path != null) {
-          await service.setValue(SPKeys.downloads, path);
-        }
-        return service.downloadsDir;
-      } on Exception catch (e, s) {
-        return Future.error(e, s);
+      final path = await externalPathService.getPathOfDirectory();
+      if (path != null) {
+        await service.setValue(SPKeys.downloads, path);
       }
+      return service.downloadsDir;
     }, initialValue: service.downloadsDir);
   }
 

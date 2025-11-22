@@ -86,7 +86,7 @@ class EpisodeMedia extends UniqueMedia {
   String? get collectionArtUrl => _albumArtUrl;
 
   EpisodeMedia copyWithX({
-    String? resource,
+    required String resource,
     Map<String, dynamic>? extras,
     Map<String, String>? httpHeaders,
     Duration? start,
@@ -99,7 +99,7 @@ class EpisodeMedia extends UniqueMedia {
     String? collectionName,
     String? artist,
   }) => EpisodeMedia(
-    resource ?? this.resource,
+    resource,
     episode: episode ?? this.episode,
     feedUrl: feedUrl ?? this.feedUrl,
     bitRate: bitRate ?? _bitRate,
