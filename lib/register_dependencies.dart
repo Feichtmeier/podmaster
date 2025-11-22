@@ -8,14 +8,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app/app_config.dart';
+import 'collection/collection_manager.dart';
 import 'common/extenal_path_service.dart';
 import 'common/platforms.dart';
 import 'notifications/notifications_service.dart';
+import 'online_art/online_art_service.dart';
 import 'player/player_manager.dart';
 import 'podcasts/download_manager.dart';
 import 'podcasts/podcast_library_service.dart';
 import 'podcasts/podcast_manager.dart';
 import 'podcasts/podcast_service.dart';
+import 'radio/radio_library_service.dart';
+import 'radio/radio_manager.dart';
+import 'radio/radio_service.dart';
+import 'search/search_manager.dart';
 import 'settings/settings_manager.dart';
 import 'settings/settings_service.dart';
 
@@ -88,8 +94,12 @@ void registerDependencies() {
       ),
       dependsOn: [PodcastLibraryService, SettingsService],
     )
+    ..registerSingleton<SearchManager>(SearchManager())
     ..registerSingletonWithDependencies<PodcastManager>(
-      () => PodcastManager(podcastService: di<PodcastService>()),
+      () => PodcastManager(
+        podcastService: di<PodcastService>(),
+        searchManager: di<SearchManager>(),
+      ),
       dependsOn: [PodcastService],
     )
     ..registerLazySingleton<ExternalPathService>(
@@ -109,5 +119,27 @@ void registerDependencies() {
         dio: di<Dio>(),
       ),
       dependsOn: [SettingsService],
-    );
+    )
+    ..registerSingletonWithDependencies<RadioLibraryService>(
+      () => RadioLibraryService(sharedPreferences: di<SharedPreferences>()),
+      dependsOn: [SharedPreferences],
+    )
+    ..registerLazySingleton<OnlineArtService>(
+      () => OnlineArtService(dio: di<Dio>()),
+    )
+    ..registerSingletonWithDependencies<RadioService>(
+      () => RadioService(
+        playerManager: di<PlayerManager>(),
+        onlineArtService: di<OnlineArtService>(),
+      ),
+      dependsOn: [PlayerManager],
+    )
+    ..registerLazySingleton<RadioManager>(
+      () => RadioManager(
+        radioLibraryService: di<RadioLibraryService>(),
+        radioService: di<RadioService>(),
+        searchManager: di<SearchManager>(),
+      ),
+    )
+    ..registerLazySingleton<CollectionManager>(() => CollectionManager());
 }

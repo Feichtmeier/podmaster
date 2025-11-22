@@ -1,5 +1,5 @@
-name: podmaster
-description: "A new Flutter project."
+name: mediadojo
+description: "An entertainment app made with Flutter, Flutter-it, and MediaKit."
 publish_to: "none"
 version: 0.1.0
 
@@ -13,6 +13,7 @@ dependencies:
     git:
       url: https://github.com/Feichtmeier/audio-service-mpris
       ref: ad6f743b73e320670449026fa1852d9978438bb9
+  basic_utils: ^5.8.2
   blur: ^4.0.2
   cached_network_image: ^3.4.1
   collection: ^1.19.1
@@ -56,6 +57,7 @@ dependencies:
   radio_browser_api: ^2.0.0+1
   safe_change_notifier: ^0.4.0+1
   shared_preferences: ^2.5.3
+  synchronized: ^3.4.0
   system_theme: ^3.1.2
   url_launcher: ^6.3.2
 
@@ -68,6 +70,7 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter
+  package_rename: ^1.10.0
 
 flutter:
   uses-material-design: true
@@ -76,10 +79,10 @@ flutter:
 flutter_launcher_icons:
   android: false
   ios: false
-  image_path: "assets/podmaster.png"
+  image_path: "assets/mediadojo.png"
   macos:
     generate: true
-    image_path: "assets/podmaster.png"
+    image_path: "assets/mediadojo.png"
 
 dependency_overrides:
   media_kit:
@@ -99,4 +102,15 @@ dependency_overrides:
       ref: d310049f24196250d876efb02b9ff56fa9ef5068
 
 assets:
-  - assets/podmaster.png
+  - assets/mediadojo.png
+
+package_rename_config:
+  linux:
+    app_name: MediaDojo
+    package_name: dev.flutterit.mediadojo
+    exe_name: mediadojo
+
+  macos:
+    app_name: MediaDojo
+    package_name: dev.flutterit.mediadojo
+    copyright_notice: Copyright © 2025 Frederik Feichtmeier. All rights reserved.

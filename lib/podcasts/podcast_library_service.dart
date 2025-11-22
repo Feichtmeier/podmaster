@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:podcast_search/podcast_search.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../common/logging.dart';
 import '../extensions/date_time_x.dart';
 import '../extensions/shared_preferences_x.dart';
 
@@ -159,34 +157,34 @@ class PodcastLibraryService {
     required List<String> genreList,
   }) async {
     if (isPodcastSubscribed(feedUrl)) return;
+
+    await persistPodcastMetadata(imageUrl, feedUrl, name, artist, genreList);
+
     await _sharedPreferences
         .setStringList(SPKeys.podcastFeedUrls, [
           ...List<String>.from(_podcasts),
           feedUrl,
         ])
         .then(notify);
+  }
+
+  Future<void> persistPodcastMetadata(
+    String? imageUrl,
+    String feedUrl,
+    String name,
+    String artist,
+    List<String> genreList,
+  ) async {
     if (imageUrl != null) {
       addSubscribedPodcastImage(feedUrl: feedUrl, imageUrl: imageUrl);
     }
     addSubscribedPodcastName(feedUrl: feedUrl, name: name);
     addSubscribedPodcastArtist(feedUrl: feedUrl, artist: artist);
     addSubscribedPodcastGenreList(feedUrl: feedUrl, genreList: genreList);
-    await _checkAndAddPodcastLastUpdated(feedUrl);
-  }
-
-  Future<void> _checkAndAddPodcastLastUpdated(String feedUrl) async {
-    DateTime? lastUpdated;
-    try {
-      lastUpdated = await Feed.feedLastUpdated(url: feedUrl);
-    } on Exception catch (e) {
-      printMessageInDebugMode(e);
-    }
-    if (lastUpdated != null) {
-      await addPodcastLastUpdated(
-        feedUrl: feedUrl,
-        timestamp: lastUpdated.podcastTimeStamp,
-      );
-    }
+    await addPodcastLastUpdated(
+      feedUrl: feedUrl,
+      timestamp: DateTime.now().podcastTimeStamp,
+    );
   }
 
   Future<void> addPodcasts(
@@ -205,17 +203,15 @@ class PodcastLibraryService {
     final newList = List<String>.from(_podcasts);
     for (var p in podcasts) {
       if (!newList.contains(p.feedUrl)) {
-        newList.add(p.feedUrl);
-        if (p.imageUrl != null) {
-          addSubscribedPodcastImage(feedUrl: p.feedUrl, imageUrl: p.imageUrl!);
-        }
-        addSubscribedPodcastName(feedUrl: p.feedUrl, name: p.name);
-        addSubscribedPodcastArtist(feedUrl: p.feedUrl, artist: p.artist);
-        addSubscribedPodcastGenreList(
-          feedUrl: p.feedUrl,
-          genreList: p.genreList,
+        await persistPodcastMetadata(
+          p.imageUrl,
+          p.feedUrl,
+          p.name,
+          p.artist,
+          p.genreList,
         );
-        await _checkAndAddPodcastLastUpdated(p.feedUrl);
+
+        newList.add(p.feedUrl);
       }
     }
     await _sharedPreferences

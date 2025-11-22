@@ -55,6 +55,15 @@ class SettingsService {
     }
   }
 
+  List<String>? getStringList(String key) {
+    try {
+      return _sharedPreferences.getStringList(key);
+    } on Exception catch (e, s) {
+      printMessageInDebugMode(e, s);
+      return null;
+    }
+  }
+
   Future<bool> setValue(String key, dynamic value) {
     try {
       return switch (value) {

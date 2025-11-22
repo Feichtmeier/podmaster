@@ -7,8 +7,8 @@ import '../common/view/wait_for_registration_page.dart';
 import '../extensions/build_context_x.dart';
 import '../extensions/color_x.dart';
 
-class Podmaster extends StatelessWidget {
-  const Podmaster({
+class MediaDojo extends StatelessWidget {
+  const MediaDojo({
     super.key,
     this.lightTheme,
     this.darkTheme,

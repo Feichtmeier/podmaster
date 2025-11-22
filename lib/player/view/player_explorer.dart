@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../collection/view/collection_view.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
-import '../../podcasts/view/podcast_collection_view.dart';
-import '../../podcasts/view/podcast_search_view.dart';
+import '../../search/view/search_view.dart';
 import 'player_queue.dart';
 
 class PlayerExplorer extends StatefulWidget {
@@ -45,11 +45,11 @@ class _PlayerExplorerState extends State<PlayerExplorer>
                 const PlayerQueue(),
                 const Padding(
                   padding: EdgeInsets.only(top: 16),
-                  child: PodcastSearchViewNew(),
+                  child: SearchView(),
                 ),
                 const Padding(
                   padding: EdgeInsets.only(top: 16),
-                  child: PodcastCollectionView(),
+                  child: CollectionView(),
                 ),
               ],
             ),
