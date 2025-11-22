@@ -99,6 +99,8 @@ void registerDependencies() {
       () => PodcastManager(
         podcastService: di<PodcastService>(),
         searchManager: di<SearchManager>(),
+        collectionManager: di<CollectionManager>(),
+        podcastLibraryService: di<PodcastLibraryService>(),
       ),
       dependsOn: [PodcastService],
     )

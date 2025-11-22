@@ -9,6 +9,7 @@ import '../../extensions/duration_x.dart';
 import '../../extensions/string_x.dart';
 import '../../player/data/episode_media.dart';
 import '../../player/player_manager.dart';
+import '../data/podcast_metadata.dart';
 import '../podcast_library_service.dart';
 import 'download_button.dart';
 
@@ -86,11 +87,13 @@ class EpisodeTile extends StatelessWidget with WatchItMixin {
               DownloadButton(
                 audio: episode,
                 addPodcast: () => di<PodcastLibraryService>().addPodcast(
-                  feedUrl: episode.feedUrl,
-                  imageUrl: podcastImage,
-                  artist: episode.artist ?? '',
-                  name: episode.collectionName ?? '',
-                  genreList: episode.genres,
+                  PodcastMetadata(
+                    feedUrl: episode.feedUrl,
+                    imageUrl: podcastImage,
+                    artist: episode.artist ?? '',
+                    name: episode.collectionName ?? '',
+                    genreList: episode.genres,
+                  ),
                 ),
               ),
             ],
