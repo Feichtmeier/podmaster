@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 
@@ -49,9 +50,9 @@ class _SearchFieldState extends State<SearchField> {
           prefixIcon: Row(
             mainAxisSize: MainAxisSize.min,
             children: MediaType.values
-                .map(
-                  (e) => IconButton(
-                    style: getTextFieldSuffixStyle(context),
+                .mapIndexed(
+                  (index, e) => IconButton(
+                    style: getTextFieldPrefixStyle(context, index),
                     isSelected: e == searchType,
                     icon: Icon(e.iconData()),
                     tooltip: e.localize(context),

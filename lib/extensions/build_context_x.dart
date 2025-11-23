@@ -11,10 +11,5 @@ extension BuildContextX on BuildContext {
   TextTheme get textTheme => theme.textTheme;
   bool get showSideBar => mediaQuerySize.width > kShowSideBarThreshHold;
   AppLocalizations get l10n => AppLocalizations.of(this);
-  double get buttonRadius => theme.buttonTheme.shape is RoundedRectangleBorder
-      ? (theme.buttonTheme.shape as RoundedRectangleBorder).borderRadius
-            .resolve(TextDirection.ltr)
-            .topLeft
-            .x
-      : 12;
+  double get buttonRadius => 8;
 }

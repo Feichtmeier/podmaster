@@ -54,7 +54,9 @@ class PlayerFullView extends StatelessWidget
     return Theme(
       data: theme.copyWith(
         colorScheme: theme.colorScheme.copyWith(
-          primary: color,
+          primary: theme.colorScheme.isLight
+              ? color.scale(lightness: -0.3, saturation: 0.3)
+              : color.scale(lightness: 0.5, saturation: 0.3),
           outline: iconColor,
         ),
         textSelectionTheme: theme.textSelectionTheme.copyWith(
@@ -64,19 +66,6 @@ class PlayerFullView extends StatelessWidget
         ),
         inputDecorationTheme: theme.inputDecorationTheme.copyWith(
           fillColor: Colors.transparent,
-
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(context.buttonRadius),
-            borderSide: BorderSide(color: color),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(context.buttonRadius),
-            borderSide: BorderSide(color: iconColor.withAlpha(150)),
-          ),
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: iconColor),
-            borderRadius: BorderRadius.circular(context.buttonRadius),
-          ),
         ),
         scaffoldBackgroundColor: getPlayerBg(
           theme,

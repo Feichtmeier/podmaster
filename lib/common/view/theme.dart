@@ -17,6 +17,19 @@ ButtonStyle getTextFieldSuffixStyle(BuildContext context) =>
       ),
     );
 
+ButtonStyle getTextFieldPrefixStyle(BuildContext context, int index) =>
+    IconButton.styleFrom(
+      fixedSize: const Size.square(40),
+      shape: RoundedRectangleBorder(
+        borderRadius: index == 0
+            ? BorderRadius.only(
+                topLeft: Radius.circular(context.buttonRadius),
+                bottomLeft: Radius.circular(context.buttonRadius),
+              )
+            : BorderRadius.zero,
+      ),
+    );
+
 Color blendColor(Color baseColor, Color blendColor, double amount) {
   return Color.fromARGB(
     (baseColor.alpha * (1 - amount) + blendColor.alpha * amount).round(),
