@@ -214,16 +214,20 @@ class PodcastLibraryService {
       _feedsWithDownloads.contains(feedUrl);
   int get feedsWithDownloadsLength => _feedsWithDownloads.length;
 
-  Future<void> addDownload({
-    required String episodeID,
+  Future<String?> addDownload({
+    required String episodeUrl,
     required String path,
     required String feedUrl,
   }) async {
-    if (getDownload(episodeID) != null && feedHasDownloads(feedUrl)) return;
+    if (getDownload(episodeUrl) != null && feedHasDownloads(feedUrl)) {
+      return path;
+    }
     await _sharedPreferences
-        .setString(episodeID + SPKeys.podcastEpisodeDownloadedSuffix, path)
+        .setString(episodeUrl + SPKeys.podcastEpisodeDownloadedSuffix, path)
         .then(notify);
     await addFeedWithDownload(feedUrl);
+
+    return path;
   }
 
   Future<void> removeDownload({

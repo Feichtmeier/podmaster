@@ -3,6 +3,7 @@ import 'package:flutter_it/flutter_it.dart';
 import '../../extensions/build_context_x.dart';
 import '../../player/data/episode_media.dart';
 import '../../settings/settings_manager.dart';
+import '../data/download_capsule.dart';
 import '../download_manager.dart';
 import '../podcast_library_service.dart';
 
@@ -15,7 +16,7 @@ class DownloadButton extends StatelessWidget with WatchItMixin {
   });
 
   final double? iconSize;
-  final EpisodeMedia? audio;
+  final EpisodeMedia audio;
   final void Function()? addPodcast;
 
   @override
@@ -23,16 +24,16 @@ class DownloadButton extends StatelessWidget with WatchItMixin {
     final theme = context.theme;
     final manager = di<DownloadManager>();
     final value = watchPropertyValue(
-      (DownloadManager m) => m.getValue(audio?.url),
+      (DownloadManager m) => m.getProgress(audio.url),
     );
 
     final download =
         watchStream(
           (PodcastLibraryService m) => m.propertiesChanged
-              .map((_) => m.getDownload(audio?.url) != null)
+              .map((_) => m.getDownload(audio.url) != null)
               .distinct(),
           initialValue:
-              di<PodcastLibraryService>().getDownload(audio?.url) != null,
+              di<PodcastLibraryService>().getDownload(audio.url) != null,
           preserveState: false,
         ).data ??
         false;
@@ -70,14 +71,17 @@ class DownloadButton extends StatelessWidget with WatchItMixin {
                     manager.deleteDownload(media: audio);
                   } else {
                     addPodcast?.call();
-                    manager.startDownload(
-                      finishedMessage: context.l10n.downloadFinished(
-                        audio?.title ?? '',
+                    manager.startOrCancelDownload(
+                      DownloadCapsule(
+                        finishedMessage: context.l10n.downloadFinished(
+                          audio.title ?? '',
+                        ),
+                        canceledMessage: context.l10n.downloadCancelled(
+                          audio.title ?? '',
+                        ),
+                        media: audio,
+                        downloadsDir: downloadsDir,
                       ),
-                      canceledMessage: context.l10n.downloadCancelled(
-                        audio?.title ?? '',
-                      ),
-                      media: audio,
                     );
                   }
                 },

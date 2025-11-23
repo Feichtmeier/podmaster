@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:podcast_search/podcast_search.dart';
 
+import '../../extensions/date_time_x.dart';
 import 'unique_media.dart';
 
 class EpisodeMedia extends UniqueMedia {
@@ -112,4 +113,10 @@ class EpisodeMedia extends UniqueMedia {
     end: end ?? this.end,
     httpHeaders: httpHeaders ?? this.httpHeaders,
   );
+
+  String get audioDownloadId {
+    final now = DateTime.now().toUtc().toString();
+    return '${artist ?? ''}${title ?? ''}${duration?.inMilliseconds ?? ''}${creationDateTime?.podcastTimeStamp ?? ''})$now'
+        .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
+  }
 }
