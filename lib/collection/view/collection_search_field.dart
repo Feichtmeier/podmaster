@@ -34,9 +34,6 @@ class _CollectionSearchFieldState extends State<CollectionSearchField> {
   @override
   Widget build(BuildContext context) {
     final searchType = watchValue((CollectionManager s) => s.mediaTypeNotifier);
-    final showOnlyDownloads = watchValue(
-      (CollectionManager m) => m.showOnlyDownloadsNotifier,
-    );
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: kBigPadding,
@@ -71,23 +68,7 @@ class _CollectionSearchFieldState extends State<CollectionSearchField> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (searchType == MediaType.podcast)
-                IconButton(
-                  tooltip: context.l10n.downloadsOnly,
-                  style: getTextFieldSuffixStyle(context, false),
-                  icon: Icon(
-                    showOnlyDownloads
-                        ? Icons.download_for_offline
-                        : Icons.download_for_offline_outlined,
-                    color: showOnlyDownloads
-                        ? context.colorScheme.primary
-                        : context.colorScheme.onSurface,
-                  ),
-                  onPressed: () {
-                    final manager = di<CollectionManager>();
-                    manager.showOnlyDownloadsNotifier.value =
-                        !manager.showOnlyDownloadsNotifier.value;
-                  },
-                ),
+                const ShowOnlyDownloadsButton(),
               IconButton(
                 style: getTextFieldSuffixStyle(context, true),
                 icon: const Icon(Icons.clear),
@@ -100,6 +81,36 @@ class _CollectionSearchFieldState extends State<CollectionSearchField> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class ShowOnlyDownloadsButton extends StatelessWidget with WatchItMixin {
+  const ShowOnlyDownloadsButton({super.key, this.singleButton = false});
+
+  final bool singleButton;
+
+  @override
+  Widget build(BuildContext context) {
+    final showOnlyDownloads = watchValue(
+      (CollectionManager m) => m.showOnlyDownloadsNotifier,
+    );
+    return IconButton(
+      tooltip: context.l10n.downloadsOnly,
+      style: singleButton ? null : getTextFieldSuffixStyle(context, false),
+      icon: Icon(
+        showOnlyDownloads
+            ? Icons.download_for_offline
+            : Icons.download_for_offline_outlined,
+        color: showOnlyDownloads
+            ? context.colorScheme.primary
+            : context.colorScheme.onSurface,
+      ),
+      onPressed: () {
+        final manager = di<CollectionManager>();
+        manager.showOnlyDownloadsNotifier.value =
+            !manager.showOnlyDownloadsNotifier.value;
+      },
     );
   }
 }

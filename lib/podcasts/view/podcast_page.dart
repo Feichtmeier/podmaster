@@ -5,6 +5,7 @@ import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
 import 'package:yaru/widgets.dart';
 
+import '../../collection/view/collection_search_field.dart';
 import '../../common/view/html_text.dart';
 import '../../common/view/safe_network_image.dart';
 import '../../common/view/sliver_sticky_panel.dart';
@@ -192,6 +193,7 @@ class _PodcastPageState extends State<PodcastPage> {
           controlPanel: ListTile(
             contentPadding: EdgeInsets.zero,
             leading: PodcastFavoriteButton(podcastItem: widget.podcastItem),
+            trailing: const ShowOnlyDownloadsButton(singleButton: true),
             title: Text(
               '${widget.podcastItem.artistName}',
               style: context.textTheme.bodySmall,
