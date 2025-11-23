@@ -99,8 +99,13 @@ class PlayerView extends StatelessWidget with WatchItMixin, PlayerControlMixin {
                       onPressed: () {
                         di<PlayerManager>().setPlaylist([], play: false);
                         di<PlayerManager>().stop();
-                        di<PlayerManager>().updateState(fullMode: false);
-                        Navigator.of(context).maybePop();
+                        if (di<PlayerManager>()
+                            .playerViewState
+                            .value
+                            .fullMode) {
+                          di<PlayerManager>().updateState(fullMode: false);
+                          Navigator.of(context).maybePop();
+                        }
                       },
                     ),
                     const SizedBox(width: kMediumPadding),

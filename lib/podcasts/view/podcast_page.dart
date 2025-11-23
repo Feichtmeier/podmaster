@@ -16,6 +16,7 @@ import '../data/podcast_genre.dart';
 import '../podcast_service.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page_episode_list.dart';
+import 'recent_downloads_button.dart';
 
 class PodcastPage extends StatefulWidget with WatchItStatefulWidgetMixin {
   const PodcastPage({super.key, required this.podcastItem});
@@ -36,6 +37,14 @@ class _PodcastPageState extends State<PodcastPage> {
       title: Text(
         widget.podcastItem.collectionName?.unEscapeHtml ?? context.l10n.podcast,
       ),
+      actions: [
+        const Flexible(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: kSmallPadding),
+            child: RecentDownloadsButton(),
+          ),
+        ),
+      ],
     ),
     bottomNavigationBar: const PlayerView(),
     body: CustomScrollView(

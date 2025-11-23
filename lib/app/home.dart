@@ -9,6 +9,7 @@ import '../player/player_manager.dart';
 import '../player/view/player_full_view.dart';
 import '../player/view/player_view.dart';
 import '../podcasts/download_manager.dart';
+import '../podcasts/view/recent_downloads_button.dart';
 import '../search/view/search_view.dart';
 import '../settings/view/settings_dialog.dart';
 
@@ -43,20 +44,28 @@ class Home extends StatelessWidget with WatchItMixin {
               ],
             ),
           ),
-          actions: [
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: kSmallPadding),
-                child: IconButton(
-                  onPressed: () => showDialog(
-                    context: context,
-                    builder: (context) => const SettingsDialog(),
-                  ),
-                  icon: const Icon(Icons.settings),
-                ),
-              ),
-            ),
-          ],
+          actions:
+              [
+                    const RecentDownloadsButton(),
+                    IconButton(
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (context) => const SettingsDialog(),
+                      ),
+                      icon: const Icon(Icons.settings),
+                    ),
+                  ]
+                  .map(
+                    (e) => Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: kSmallPadding,
+                        ),
+                        child: e,
+                      ),
+                    ),
+                  )
+                  .toList(),
         ),
         body: const TabBarView(children: [SearchView(), CollectionView()]),
         bottomNavigationBar: const PlayerView(),

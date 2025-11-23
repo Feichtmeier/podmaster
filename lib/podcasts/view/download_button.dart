@@ -21,7 +21,7 @@ class DownloadButton extends StatelessWidget {
   Widget build(BuildContext context) => Stack(
     alignment: Alignment.center,
     children: [
-      _DownloadProgress(url: episode.url),
+      _DownloadProgress(episode: episode),
       _ProcessDownloadButton(episode: episode, addPodcast: addPodcast),
     ],
   );
@@ -82,13 +82,15 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
 }
 
 class _DownloadProgress extends StatelessWidget with WatchItMixin {
-  const _DownloadProgress({this.url});
+  const _DownloadProgress({this.episode});
 
-  final String? url;
+  final EpisodeMedia? episode;
 
   @override
   Widget build(BuildContext context) {
-    final value = watchPropertyValue((DownloadManager m) => m.getProgress(url));
+    final value = watchPropertyValue(
+      (DownloadManager m) => m.getProgress(episode),
+    );
     return SizedBox.square(
       dimension: (context.theme.buttonTheme.height / 2 * 2) - 3,
       child: CircularProgressIndicator(
