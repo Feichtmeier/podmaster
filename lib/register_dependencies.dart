@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -56,7 +58,11 @@ void registerDependencies() {
         ),
       );
     }, dispose: (s) => s.player.dispose())
-    ..registerLazySingleton<Dio>(() => Dio(), dispose: (s) => s.close())
+    ..registerLazySingleton<Dio>(() {
+      final dio = Dio();
+      dio.options.headers = {HttpHeaders.acceptEncodingHeader: '*'};
+      return dio;
+    }, dispose: (s) => s.close())
     ..registerSingletonAsync<PlayerManager>(
       () async => AudioService.init(
         config: AudioServiceConfig(
@@ -114,13 +120,11 @@ void registerDependencies() {
       ),
       dependsOn: [SettingsService],
     )
-    ..registerSingletonWithDependencies<DownloadManager>(
+    ..registerLazySingleton<DownloadManager>(
       () => DownloadManager(
         libraryService: di<PodcastLibraryService>(),
-        settingsService: di<SettingsService>(),
         dio: di<Dio>(),
       ),
-      dependsOn: [SettingsService],
     )
     ..registerSingletonWithDependencies<RadioLibraryService>(
       () => RadioLibraryService(sharedPreferences: di<SharedPreferences>()),
