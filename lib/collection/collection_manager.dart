@@ -8,6 +8,7 @@ class CollectionManager {
     textChangedCommand = Command.createSync((s) => s, initialValue: '');
   }
   final mediaTypeNotifier = ValueNotifier<MediaType>(MediaType.podcast);
+  final showOnlyDownloadsNotifier = ValueNotifier<bool>(false);
 
   late Command<String, String> textChangedCommand;
 }

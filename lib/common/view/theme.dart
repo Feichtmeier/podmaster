@@ -6,14 +6,16 @@ import '../../extensions/build_context_x.dart';
 import '../../extensions/color_scheme_x.dart';
 import '../../extensions/color_x.dart';
 
-ButtonStyle getTextFieldSuffixStyle(BuildContext context) =>
+ButtonStyle getTextFieldSuffixStyle(BuildContext context, bool isLast) =>
     IconButton.styleFrom(
       fixedSize: const Size.square(40),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(context.buttonRadius),
-          bottomRight: Radius.circular(context.buttonRadius),
-        ),
+        borderRadius: isLast
+            ? BorderRadius.only(
+                topRight: Radius.circular(context.buttonRadius),
+                bottomRight: Radius.circular(context.buttonRadius),
+              )
+            : BorderRadius.zero,
       ),
     );
 

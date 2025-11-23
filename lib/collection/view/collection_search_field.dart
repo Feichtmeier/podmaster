@@ -34,6 +34,9 @@ class _CollectionSearchFieldState extends State<CollectionSearchField> {
   @override
   Widget build(BuildContext context) {
     final searchType = watchValue((CollectionManager s) => s.mediaTypeNotifier);
+    final showOnlyDownloads = watchValue(
+      (CollectionManager m) => m.showOnlyDownloadsNotifier,
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: kBigPadding,
@@ -64,13 +67,36 @@ class _CollectionSearchFieldState extends State<CollectionSearchField> {
                 )
                 .toList(),
           ),
-          suffixIcon: IconButton(
-            style: getTextFieldSuffixStyle(context),
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              _controller.clear();
-              di<CollectionManager>().textChangedCommand.run('');
-            },
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (searchType == MediaType.podcast)
+                IconButton(
+                  tooltip: context.l10n.downloadsOnly,
+                  style: getTextFieldSuffixStyle(context, false),
+                  icon: Icon(
+                    showOnlyDownloads
+                        ? Icons.download_for_offline
+                        : Icons.download_for_offline_outlined,
+                    color: showOnlyDownloads
+                        ? context.colorScheme.primary
+                        : context.colorScheme.onSurface,
+                  ),
+                  onPressed: () {
+                    final manager = di<CollectionManager>();
+                    manager.showOnlyDownloadsNotifier.value =
+                        !manager.showOnlyDownloadsNotifier.value;
+                  },
+                ),
+              IconButton(
+                style: getTextFieldSuffixStyle(context, true),
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  _controller.clear();
+                  di<CollectionManager>().textChangedCommand.run('');
+                },
+              ),
+            ],
           ),
         ),
       ),

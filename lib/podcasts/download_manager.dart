@@ -34,6 +34,7 @@ class DownloadManager extends ChangeNotifier {
 
   Stream<String> get messageStream => _messageStreamController.stream;
 
+  List<String> get feedsWithDownloads => _libraryService.feedsWithDownloads;
   String? getDownload(String? url) => _libraryService.getDownload(url);
   bool isDownloaded(String? url) => getDownload(url) != null;
   final _episodeToProgress = <EpisodeMedia, double?>{};

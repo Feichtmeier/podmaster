@@ -64,7 +64,7 @@ class _SearchFieldState extends State<SearchField> {
                 .toList(),
           ),
           suffixIcon: IconButton(
-            style: getTextFieldSuffixStyle(context),
+            style: getTextFieldSuffixStyle(context, true),
             icon: const Icon(Icons.clear),
             onPressed: () {
               _controller.clear();
