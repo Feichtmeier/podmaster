@@ -73,29 +73,29 @@ class PodcastLibraryService {
     for (var p in metadata) {
       if (!newList.contains(p.feedUrl)) {
         await _addPodcastMetadata(p);
-
         newList.add(p.feedUrl);
       }
     }
     await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, newList);
   }
 
-  Future<void> removePodcast(String feedUrl) async {
+  Future<void> removePodcast(String feedUrl, {bool update = true}) async {
     if (!isPodcastSubscribed(feedUrl)) return;
     final newList = List<String>.from(_podcasts)..remove(feedUrl);
     await _removeFeedWithDownload(feedUrl);
     removeSubscribedPodcastImage(feedUrl);
     removeSubscribedPodcastName(feedUrl);
     removeSubscribedPodcastArtist(feedUrl);
-    await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, newList);
+    _removePodcastLastUpdated(feedUrl);
+
+    if (update) {
+      await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, newList);
+    }
   }
 
   Future<void> removeAllPodcasts() async {
     for (final feedUrl in _podcasts) {
-      removeSubscribedPodcastImage(feedUrl);
-      removeSubscribedPodcastName(feedUrl);
-      removeSubscribedPodcastArtist(feedUrl);
-      _removePodcastLastUpdated(feedUrl);
+      await removePodcast(feedUrl, update: false);
     }
     _podcasts.clear();
     _podcastUpdates?.clear();
@@ -231,13 +231,13 @@ class PodcastLibraryService {
   }
 
   Future<void> removeDownload({
-    required String episodeID,
+    required String episodeUrl,
     required String feedUrl,
   }) async {
-    if (getDownload(episodeID) == null) return;
-    _deleteDownload(episodeID);
+    if (getDownload(episodeUrl) == null) return;
+    _deleteDownload(episodeUrl);
     await _sharedPreferences
-        .remove(episodeID + SPKeys.podcastEpisodeDownloadedSuffix)
+        .remove(episodeUrl + SPKeys.podcastEpisodeDownloadedSuffix)
         .then(notify);
     // Check if there are any downloads left for this feed
     final hasMoreDownloads = _sharedPreferences.getKeys().any(
