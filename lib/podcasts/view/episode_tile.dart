@@ -85,7 +85,7 @@ class EpisodeTile extends StatelessWidget with WatchItMixin {
                 '${episode.creationDateTime!.unixTimeToDateString} · ${episode.duration?.formattedTime ?? 'Unknown duration'}',
               ),
               DownloadButton(
-                audio: episode,
+                episode: episode,
                 addPodcast: () => di<PodcastManager>().addPodcast(
                   PodcastMetadata(
                     feedUrl: episode.feedUrl,

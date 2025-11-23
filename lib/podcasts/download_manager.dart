@@ -14,10 +14,15 @@ class DownloadManager extends ChangeNotifier {
     required PodcastLibraryService libraryService,
     required Dio dio,
   }) : _libraryService = libraryService,
-       _dio = dio;
+       _dio = dio {
+    _propertiesChangedSubscription = _libraryService.propertiesChanged.listen(
+      (_) => notifyListeners(),
+    );
+  }
 
   final PodcastLibraryService _libraryService;
   final Dio _dio;
+  StreamSubscription<bool>? _propertiesChangedSubscription;
 
   final _urlToProgress = <String, double?>{};
   final _urlToCancelToken = <String, CancelToken?>{};
@@ -31,6 +36,7 @@ class DownloadManager extends ChangeNotifier {
 
   Stream<String> get messageStream => _messageStreamController.stream;
 
+  bool isDownloaded(String? url) => _libraryService.getDownload(url) != null;
   double? getProgress(String? url) => _urlToProgress[url];
   void setProgress({
     required int received,
@@ -54,7 +60,7 @@ class DownloadManager extends ChangeNotifier {
       _urlToProgress[url] = null;
       _urlToCancelToken[url] = null;
       await _libraryService.removeDownload(
-        episodeID: url,
+        episodeUrl: url,
         feedUrl: capsule.media.feedUrl,
       );
       notifyListeners();
@@ -74,20 +80,17 @@ class DownloadManager extends ChangeNotifier {
       url: url,
       path: toDownloadPath,
     );
+    String? downloadedPath;
     if (response?.statusCode == 200) {
-      final downloadedPath = await _libraryService.addDownload(
+      downloadedPath = await _libraryService.addDownload(
         episodeUrl: url,
         path: toDownloadPath,
         feedUrl: capsule.media.feedUrl,
       );
       _addMessage(capsule.finishedMessage);
       _urlToCancelToken[url] = null;
-      return downloadedPath;
-    } else {
-      throw Exception(
-        'Download failed with status code: ${response?.statusCode}',
-      );
     }
+    return downloadedPath;
   }
 
   Future<Response<dynamic>?> _processDownload({
@@ -120,7 +123,7 @@ class DownloadManager extends ChangeNotifier {
   Future<void> deleteDownload({required EpisodeMedia? media}) async {
     if (media?.url != null && media?.feedUrl != null) {
       await _libraryService.removeDownload(
-        episodeID: media!.url!,
+        episodeUrl: media!.url!,
         feedUrl: media.feedUrl,
       );
       if (_urlToProgress.containsKey(media.url)) {
@@ -145,6 +148,7 @@ class DownloadManager extends ChangeNotifier {
   @override
   Future<void> dispose() async {
     await _messageStreamController.close();
+    await _propertiesChangedSubscription?.cancel();
     super.dispose();
   }
 }
