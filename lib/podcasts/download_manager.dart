@@ -24,8 +24,6 @@ class DownloadManager extends ChangeNotifier {
   final Dio _dio;
   StreamSubscription<bool>? _propertiesChangedSubscription;
 
-  final _urlToProgress = <String, double?>{};
-  final _urlToCancelToken = <String, CancelToken?>{};
   final _messageStreamController = StreamController<String>.broadcast();
   String _lastMessage = '';
   void _addMessage(String message) {
@@ -36,18 +34,29 @@ class DownloadManager extends ChangeNotifier {
 
   Stream<String> get messageStream => _messageStreamController.stream;
 
-  bool isDownloaded(String? url) => _libraryService.getDownload(url) != null;
-  double? getProgress(String? url) => _urlToProgress[url];
+  List<String> get feedsWithDownloads => _libraryService.feedsWithDownloads;
+  String? getDownload(String? url) => _libraryService.getDownload(url);
+  bool isDownloaded(String? url) => getDownload(url) != null;
+  final _episodeToProgress = <EpisodeMedia, double?>{};
+  Map<EpisodeMedia, double?> get episodeToProgress => _episodeToProgress;
+  bool getDownloadsInProgress() => _episodeToProgress.values.any(
+    (progress) => progress != null && progress < 1.0,
+  );
+
+  double? getProgress(EpisodeMedia? episode) => _episodeToProgress[episode];
   void setProgress({
     required int received,
     required int total,
-    required String url,
+    required EpisodeMedia episode,
   }) {
     if (total <= 0) return;
-    _urlToProgress[url] = received / total;
+    _episodeToProgress[episode] = received / total;
     notifyListeners();
   }
 
+  final _episodeToCancelToken = <EpisodeMedia, CancelToken?>{};
+  bool _canCancelDownload(EpisodeMedia episode) =>
+      _episodeToCancelToken[episode] != null;
   Future<String?> startOrCancelDownload(DownloadCapsule capsule) async {
     final url = capsule.media.url;
 
@@ -55,15 +64,9 @@ class DownloadManager extends ChangeNotifier {
       throw Exception('Invalid media, missing URL to download');
     }
 
-    if (_urlToCancelToken[url] != null) {
-      _urlToCancelToken[url]?.cancel();
-      _urlToProgress[url] = null;
-      _urlToCancelToken[url] = null;
-      await _libraryService.removeDownload(
-        episodeUrl: url,
-        feedUrl: capsule.media.feedUrl,
-      );
-      notifyListeners();
+    if (_canCancelDownload(capsule.media)) {
+      await _cancelDownload(capsule.media);
+      await deleteDownload(media: capsule.media);
       return null;
     }
 
@@ -77,38 +80,57 @@ class DownloadManager extends ChangeNotifier {
     );
     final response = await _processDownload(
       canceledMessage: capsule.canceledMessage,
-      url: url,
+      episode: capsule.media,
       path: toDownloadPath,
     );
-    String? downloadedPath;
+
     if (response?.statusCode == 200) {
-      downloadedPath = await _libraryService.addDownload(
+      await _libraryService.addDownload(
         episodeUrl: url,
         path: toDownloadPath,
         feedUrl: capsule.media.feedUrl,
       );
+      _episodeToCancelToken.remove(capsule.media);
       _addMessage(capsule.finishedMessage);
-      _urlToCancelToken[url] = null;
+      notifyListeners();
     }
-    return downloadedPath;
+    return _libraryService.getDownload(url);
+  }
+
+  Future<void> _cancelDownload(EpisodeMedia? episode) async {
+    if (episode == null) return;
+    _episodeToCancelToken[episode]?.cancel();
+    _episodeToProgress.remove(episode);
+    _episodeToCancelToken.remove(episode);
+    notifyListeners();
+  }
+
+  Future<void> cancelAllDownloads() async {
+    final episodes = _episodeToCancelToken.keys.toList();
+    for (final episode in episodes) {
+      _episodeToCancelToken[episode]?.cancel();
+      _episodeToProgress.remove(episode);
+      _episodeToCancelToken.remove(episode);
+    }
+    notifyListeners();
   }
 
   Future<Response<dynamic>?> _processDownload({
-    required String url,
+    required EpisodeMedia episode,
     required String path,
     required String canceledMessage,
   }) async {
-    _urlToCancelToken[url] = CancelToken();
+    _episodeToCancelToken[episode] = CancelToken();
     try {
       return await _dio.download(
-        url,
+        episode.url!,
         path,
         onReceiveProgress: (count, total) =>
-            setProgress(received: count, total: total, url: url),
-        cancelToken: _urlToCancelToken[url],
+            setProgress(received: count, total: total, episode: episode),
+        cancelToken: _episodeToCancelToken[episode],
       );
     } catch (e) {
-      _urlToCancelToken[url]?.cancel();
+      _episodeToCancelToken[episode]?.cancel();
 
       String? message;
       if (e.toString().contains('[request cancelled]')) {
@@ -126,27 +148,25 @@ class DownloadManager extends ChangeNotifier {
         episodeUrl: media!.url!,
         feedUrl: media.feedUrl,
       );
-      if (_urlToProgress.containsKey(media.url)) {
-        _urlToProgress.update(media.url!, (value) => null);
-      }
-
+      _episodeToProgress.remove(media);
       notifyListeners();
     }
   }
 
   Future<void> deleteAllDownloads() async {
-    if (_urlToProgress.isNotEmpty) {
+    if (_episodeToProgress.isNotEmpty) {
       throw Exception(
         'Cannot delete all downloads while downloads are in progress',
       );
     }
     await _libraryService.removeAllDownloads();
-    _urlToProgress.clear();
+    _episodeToProgress.clear();
     notifyListeners();
   }
 
   @override
   Future<void> dispose() async {
+    await cancelAllDownloads();
     await _messageStreamController.close();
     await _propertiesChangedSubscription?.cancel();
     super.dispose();

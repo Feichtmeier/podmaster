@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 
@@ -50,9 +51,9 @@ class _CollectionSearchFieldState extends State<CollectionSearchField> {
           prefixIcon: Row(
             mainAxisSize: MainAxisSize.min,
             children: MediaType.values
-                .map(
-                  (e) => IconButton(
-                    style: getTextFieldSuffixStyle(context),
+                .mapIndexed(
+                  (index, e) => IconButton(
+                    style: getTextFieldPrefixStyle(context, index),
                     isSelected: e == searchType,
                     icon: Icon(e.iconData()),
                     tooltip: e.localize(context),
@@ -63,16 +64,53 @@ class _CollectionSearchFieldState extends State<CollectionSearchField> {
                 )
                 .toList(),
           ),
-          suffixIcon: IconButton(
-            style: getTextFieldSuffixStyle(context),
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              _controller.clear();
-              di<CollectionManager>().textChangedCommand.run('');
-            },
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (searchType == MediaType.podcast)
+                const ShowOnlyDownloadsButton(),
+              IconButton(
+                style: getTextFieldSuffixStyle(context, true),
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  _controller.clear();
+                  di<CollectionManager>().textChangedCommand.run('');
+                },
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class ShowOnlyDownloadsButton extends StatelessWidget with WatchItMixin {
+  const ShowOnlyDownloadsButton({super.key, this.singleButton = false});
+
+  final bool singleButton;
+
+  @override
+  Widget build(BuildContext context) {
+    final showOnlyDownloads = watchValue(
+      (CollectionManager m) => m.showOnlyDownloadsNotifier,
+    );
+    return IconButton(
+      tooltip: context.l10n.downloadsOnly,
+      style: singleButton ? null : getTextFieldSuffixStyle(context, false),
+      icon: Icon(
+        showOnlyDownloads
+            ? Icons.download_for_offline
+            : Icons.download_for_offline_outlined,
+        color: showOnlyDownloads
+            ? context.colorScheme.primary
+            : context.colorScheme.onSurface,
+      ),
+      onPressed: () {
+        final manager = di<CollectionManager>();
+        manager.showOnlyDownloadsNotifier.value =
+            !manager.showOnlyDownloadsNotifier.value;
+      },
     );
   }
 }

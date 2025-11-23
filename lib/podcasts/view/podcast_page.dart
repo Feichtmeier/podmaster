@@ -5,6 +5,7 @@ import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
 import 'package:yaru/widgets.dart';
 
+import '../../collection/view/collection_search_field.dart';
 import '../../common/view/html_text.dart';
 import '../../common/view/safe_network_image.dart';
 import '../../common/view/sliver_sticky_panel.dart';
@@ -16,6 +17,7 @@ import '../data/podcast_genre.dart';
 import '../podcast_service.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page_episode_list.dart';
+import 'recent_downloads_button.dart';
 
 class PodcastPage extends StatefulWidget with WatchItStatefulWidgetMixin {
   const PodcastPage({super.key, required this.podcastItem});
@@ -36,6 +38,14 @@ class _PodcastPageState extends State<PodcastPage> {
       title: Text(
         widget.podcastItem.collectionName?.unEscapeHtml ?? context.l10n.podcast,
       ),
+      actions: [
+        const Flexible(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: kSmallPadding),
+            child: RecentDownloadsButton(),
+          ),
+        ),
+      ],
     ),
     bottomNavigationBar: const PlayerView(),
     body: CustomScrollView(
@@ -183,6 +193,7 @@ class _PodcastPageState extends State<PodcastPage> {
           controlPanel: ListTile(
             contentPadding: EdgeInsets.zero,
             leading: PodcastFavoriteButton(podcastItem: widget.podcastItem),
+            trailing: const ShowOnlyDownloadsButton(singleButton: true),
             title: Text(
               '${widget.podcastItem.artistName}',
               style: context.textTheme.bodySmall,

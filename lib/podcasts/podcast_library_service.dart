@@ -93,17 +93,6 @@ class PodcastLibraryService {
     }
   }
 
-  Future<void> removeAllPodcasts() async {
-    for (final feedUrl in _podcasts) {
-      await removePodcast(feedUrl, update: false);
-    }
-    _podcasts.clear();
-    _podcastUpdates?.clear();
-    await _sharedPreferences
-        .setStringList(SPKeys.podcastFeedUrls, [])
-        .then(notify);
-  }
-
   // Podcast Metadata
   // ------------------
   Future<void> _addPodcastMetadata(PodcastMetadata metadata) async {
@@ -193,6 +182,16 @@ class PodcastLibraryService {
 
   // Podcast Downloads
   // ------------------
+
+  List<String> get downloadedEpisodeUrls {
+    final keys = _sharedPreferences.getKeys().where(
+      (key) => key.endsWith(SPKeys.podcastEpisodeDownloadedSuffix),
+    );
+    return keys
+        .map((e) => e.replaceAll(SPKeys.podcastEpisodeDownloadedSuffix, ''))
+        .toList();
+  }
+
   String? getDownload(String? url) => url == null
       ? null
       : _sharedPreferences.getString(
@@ -213,21 +212,20 @@ class PodcastLibraryService {
   bool feedHasDownloads(String feedUrl) =>
       _feedsWithDownloads.contains(feedUrl);
   int get feedsWithDownloadsLength => _feedsWithDownloads.length;
+  List<String> get feedsWithDownloads => _feedsWithDownloads.toList();
 
-  Future<String?> addDownload({
+  Future<void> addDownload({
     required String episodeUrl,
     required String path,
     required String feedUrl,
   }) async {
     if (getDownload(episodeUrl) != null && feedHasDownloads(feedUrl)) {
-      return path;
+      return;
     }
     await _sharedPreferences
         .setString(episodeUrl + SPKeys.podcastEpisodeDownloadedSuffix, path)
         .then(notify);
     await addFeedWithDownload(feedUrl);
-
-    return path;
   }
 
   Future<void> removeDownload({
