@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
-import 'package:future_loading_dialog/future_loading_dialog.dart';
 import 'package:phoenix_theme/phoenix_theme.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -9,11 +8,11 @@ import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
 import '../../player/player_manager.dart';
-import '../podcast_service.dart';
+import '../podcast_manager.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
 
-class PodcastCard extends StatefulWidget {
+class PodcastCard extends StatefulWidget with WatchItStatefulWidgetMixin {
   const PodcastCard({super.key, required this.podcastItem});
 
   final Item podcastItem;
@@ -27,6 +26,33 @@ class _PodcastCardState extends State<PodcastCard> {
 
   @override
   Widget build(BuildContext context) {
+    // Handle loading dialog and auto-play when episodes are fetched
+    registerHandler(
+      select: (PodcastManager m) => m.fetchEpisodeMediaCommand.results,
+      handler: (context, result, cancel) {
+        if (result.isRunning) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        } else if (result.isSuccess) {
+          // Dismiss dialog
+          Navigator.of(context).pop();
+
+          // Play episodes if available
+          if (result.data != null && result.data!.isNotEmpty) {
+            di<PlayerManager>().setPlaylist(result.data!, index: 0);
+          }
+        } else if (result.hasError) {
+          // Dismiss dialog on error
+          Navigator.of(context).pop();
+        }
+      },
+    );
+
     final theme = context.theme;
     final isLight = theme.colorScheme.isLight;
     const borderRadiusGeometry = BorderRadiusGeometry.only(
@@ -95,23 +121,9 @@ class _PodcastCardState extends State<PodcastCard> {
                             children: [
                               FloatingActionButton.small(
                                 heroTag: 'podcastcardfap',
-                                onPressed: () async {
-                                  final res = await showFutureLoadingDialog(
-                                    context: context,
-                                    future: () async => di<PodcastService>()
-                                        .findEpisodes(item: widget.podcastItem),
-                                  );
-                                  if (res.isValue) {
-                                    final result = res.asValue!.value;
-                                    final episodes = result.episodes;
-                                    if (episodes.isNotEmpty) {
-                                      await di<PlayerManager>().setPlaylist(
-                                        episodes,
-                                        index: 0,
-                                      );
-                                    }
-                                  }
-                                },
+                                onPressed: () => di<PodcastManager>()
+                                    .fetchEpisodeMediaCommand
+                                    .run(widget.podcastItem),
                                 child: const Icon(Icons.play_arrow),
                               ),
                               PodcastFavoriteButton.floating(

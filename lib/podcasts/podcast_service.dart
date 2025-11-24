@@ -4,11 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:podcast_search/podcast_search.dart';
 
 import '../common/logging.dart';
-import '../extensions/date_time_x.dart';
 import '../extensions/podcast_x.dart';
 import '../extensions/shared_preferences_x.dart';
-import '../extensions/string_x.dart';
-import '../notifications/notifications_service.dart';
 import '../player/data/episode_media.dart';
 import '../settings/settings_service.dart';
 import 'data/podcast_genre.dart';
@@ -16,15 +13,12 @@ import 'data/simple_language.dart';
 import 'podcast_library_service.dart';
 
 class PodcastService {
-  final NotificationsService _notificationsService;
   final SettingsService _settingsService;
   final PodcastLibraryService _libraryService;
   PodcastService({
-    required NotificationsService notificationsService,
     required SettingsService settingsService,
     required PodcastLibraryService libraryService,
-  }) : _notificationsService = notificationsService,
-       _settingsService = settingsService,
+  }) : _settingsService = settingsService,
        _libraryService = libraryService {
     _search = Search(
       searchProvider:
@@ -80,60 +74,6 @@ class PodcastService {
     } catch (e) {
       rethrow;
     }
-  }
-
-  bool _updateLock = false;
-
-  Future<void> checkForUpdates({
-    Set<String>? feedUrls,
-    required String updateMessage,
-    required String Function(int length) multiUpdateMessage,
-  }) async {
-    if (_updateLock) return;
-    _updateLock = true;
-
-    final newUpdateFeedUrls = <String>{};
-
-    for (final feedUrl in (feedUrls ?? _libraryService.podcasts)) {
-      final storedTimeStamp = _libraryService.getPodcastLastUpdated(feedUrl);
-      DateTime? feedLastUpdated;
-      try {
-        feedLastUpdated = await Feed.feedLastUpdated(url: feedUrl);
-      } on Exception catch (e) {
-        printMessageInDebugMode(e);
-      }
-      final name = _libraryService.getSubscribedPodcastName(feedUrl);
-
-      printMessageInDebugMode('checking update for: ${name ?? feedUrl} ');
-      printMessageInDebugMode(
-        'storedTimeStamp: ${storedTimeStamp ?? 'no timestamp'}',
-      );
-      printMessageInDebugMode(
-        'feedLastUpdated: ${feedLastUpdated?.podcastTimeStamp ?? 'no timestamp'}',
-      );
-
-      if (feedLastUpdated == null) continue;
-
-      await _libraryService.addPodcastLastUpdated(
-        feedUrl: feedUrl,
-        timestamp: feedLastUpdated.podcastTimeStamp,
-      );
-
-      if (storedTimeStamp != null &&
-          !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
-        await _libraryService.addPodcastUpdate(feedUrl, feedLastUpdated);
-        newUpdateFeedUrls.add(feedUrl);
-      }
-    }
-
-    if (newUpdateFeedUrls.isNotEmpty) {
-      final msg = newUpdateFeedUrls.length == 1
-          ? updateMessage
-          : multiUpdateMessage(newUpdateFeedUrls.length);
-      await _notificationsService.notify(message: msg);
-    }
-
-    _updateLock = false;
   }
 
   // Stateless operation - just fetches episodes and description, no caching

@@ -4,6 +4,9 @@ import 'package:podcast_search/podcast_search.dart';
 import '../collection/collection_manager.dart';
 import '../common/logging.dart';
 import '../extensions/country_x.dart';
+import '../extensions/date_time_x.dart';
+import '../extensions/string_x.dart';
+import '../notifications/notifications_service.dart';
 import '../player/data/episode_media.dart';
 import '../search/search_manager.dart';
 import 'data/podcast_metadata.dart';
@@ -21,8 +24,10 @@ class PodcastManager {
     required SearchManager searchManager,
     required CollectionManager collectionManager,
     required PodcastLibraryService podcastLibraryService,
+    required NotificationsService notificationsService,
   }) : _podcastService = podcastService,
-       _podcastLibraryService = podcastLibraryService {
+       _podcastLibraryService = podcastLibraryService,
+       _notificationsService = notificationsService {
     Command.globalExceptionHandler = (e, s) {
       printMessageInDebugMode(e.error, s);
     };
@@ -71,6 +76,72 @@ class PodcastManager {
       return result.episodes;
     }, initialValue: []);
 
+    checkForUpdatesCommand =
+        Command.createAsync<
+          ({
+            Set<String>? feedUrls,
+            String updateMessage,
+            String Function(int) multiUpdateMessage,
+          }),
+          void
+        >((params) async {
+          final newUpdateFeedUrls = <String>{};
+
+          for (final feedUrl
+              in (params.feedUrls ?? _podcastLibraryService.podcasts)) {
+            final storedTimeStamp = _podcastLibraryService
+                .getPodcastLastUpdated(feedUrl);
+            DateTime? feedLastUpdated;
+            try {
+              feedLastUpdated = await Feed.feedLastUpdated(url: feedUrl);
+            } on Exception catch (e) {
+              printMessageInDebugMode(e);
+            }
+            final name = _podcastLibraryService.getSubscribedPodcastName(
+              feedUrl,
+            );
+
+            printMessageInDebugMode('checking update for: ${name ?? feedUrl} ');
+            printMessageInDebugMode(
+              'storedTimeStamp: ${storedTimeStamp ?? 'no timestamp'}',
+            );
+            printMessageInDebugMode(
+              'feedLastUpdated: ${feedLastUpdated?.podcastTimeStamp ?? 'no timestamp'}',
+            );
+
+            if (feedLastUpdated == null) continue;
+
+            await _podcastLibraryService.addPodcastLastUpdated(
+              feedUrl: feedUrl,
+              timestamp: feedLastUpdated.podcastTimeStamp,
+            );
+
+            if (storedTimeStamp != null &&
+                !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
+              // Fetch episodes to refresh cache
+              await fetchEpisodeMediaCommand.runAsync(Item(feedUrl: feedUrl));
+
+              await _podcastLibraryService.addPodcastUpdate(
+                feedUrl,
+                feedLastUpdated,
+              );
+              newUpdateFeedUrls.add(feedUrl);
+            }
+          }
+
+          if (newUpdateFeedUrls.isNotEmpty) {
+            final podcastName = newUpdateFeedUrls.length == 1
+                ? _podcastLibraryService.getSubscribedPodcastName(
+                    newUpdateFeedUrls.first,
+                  )
+                : null;
+            final msg = newUpdateFeedUrls.length == 1
+                ? '${params.updateMessage}${podcastName != null ? ' $podcastName' : ''}'
+                : params.multiUpdateMessage(newUpdateFeedUrls.length);
+            await _notificationsService.notify(message: msg);
+          }
+        }, initialValue: null);
+
     podcastsCommand.run(null);
 
     updateSearchCommand.run(null);
@@ -78,6 +149,7 @@ class PodcastManager {
 
   final PodcastService _podcastService;
   final PodcastLibraryService _podcastLibraryService;
+  final NotificationsService _notificationsService;
 
   // Track episodes currently downloading
   final activeDownloads = ListNotifier<EpisodeMedia>();
@@ -89,6 +161,15 @@ class PodcastManager {
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
   late Command<String?, List<PodcastMetadata>> podcastsCommand;
+  late Command<
+    ({
+      Set<String>? feedUrls,
+      String updateMessage,
+      String Function(int) multiUpdateMessage,
+    }),
+    void
+  >
+  checkForUpdatesCommand;
 
   Future<void> addPodcast(PodcastMetadata metadata) async {
     await _podcastLibraryService.addPodcast(metadata);

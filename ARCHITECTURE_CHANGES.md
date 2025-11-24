@@ -232,7 +232,95 @@ String? getPodcastDescription(String? feedUrl) =>
 
 ---
 
-### 7. UI Simplification
+### 7. Moved checkForUpdates() to PodcastManager & Converted to Command
+
+**What**: Moved podcast update checking from PodcastService to PodcastManager and converted to Command pattern
+
+**Why**:
+- checkForUpdates() needs to invalidate/refresh the episode cache (owned by PodcastManager)
+- Commands provide built-in execution management (no manual lock needed)
+- Consistent with other manager patterns
+- UI can watch command state directly
+
+**Changes in PodcastService**:
+- ❌ Removed `checkForUpdates()` method
+- ❌ Removed `_updateLock` field
+- ❌ Removed `NotificationsService` dependency (no longer needed)
+
+**Changes in PodcastManager**:
+- ✅ Added `checkForUpdatesCommand` (Command with record parameters)
+- ✅ Removed `_updateLock` field (Command handles this with `isRunning`)
+- ✅ Added `NotificationsService` dependency
+- ✅ Fixed bug: Episodes are now fetched when updates detected (was accidentally removed)
+- ✅ Restored podcast name in single-update notifications
+
+**Command Definition**:
+```dart
+late Command<
+    ({
+      Set<String>? feedUrls,
+      String updateMessage,
+      String Function(int) multiUpdateMessage
+    }),
+    void> checkForUpdatesCommand;
+
+// Initialized in constructor:
+checkForUpdatesCommand = Command.createAsync<...>((params) async {
+  final newUpdateFeedUrls = <String>{};
+
+  for (final feedUrl in (params.feedUrls ?? _podcastLibraryService.podcasts)) {
+    // Check for updates...
+
+    if (storedTimeStamp != null &&
+        !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
+      // Fetch episodes to refresh cache using runAsync
+      await fetchEpisodeMediaCommand.runAsync(Item(feedUrl: feedUrl));
+
+      await _podcastLibraryService.addPodcastUpdate(feedUrl, feedLastUpdated);
+      newUpdateFeedUrls.add(feedUrl);
+    }
+  }
+
+  if (newUpdateFeedUrls.isNotEmpty) {
+    // Include podcast name in single-update notification
+    final podcastName = newUpdateFeedUrls.length == 1
+        ? _podcastLibraryService.getSubscribedPodcastName(newUpdateFeedUrls.first)
+        : null;
+    final msg = newUpdateFeedUrls.length == 1
+        ? '${params.updateMessage}${podcastName != null ? ' $podcastName' : ''}'
+        : params.multiUpdateMessage(newUpdateFeedUrls.length);
+    await _notificationsService.notify(message: msg);
+  }
+}, initialValue: null);
+```
+
+**Usage**:
+```dart
+// Run the command:
+podcastManager.checkForUpdatesCommand.run((
+  feedUrls: null,  // or specific set
+  updateMessage: 'New episode available',
+  multiUpdateMessage: (count) => '$count new episodes available'
+));
+
+// UI can watch command state:
+watch(podcastManager.checkForUpdatesCommand.isRunning).value
+```
+
+**Benefits**:
+- ✅ No manual lock needed (Command prevents concurrent execution automatically)
+- ✅ UI can watch `command.isRunning` for loading state
+- ✅ Consistent with other manager commands
+- ✅ Manager owns cache invalidation logic
+- ✅ Service remains stateless
+- ✅ Bug fixed: Episodes fetched when updates detected
+- ✅ More informative notifications (includes podcast name)
+
+**Note**: `checkForUpdatesCommand` is fully implemented but not yet called anywhere in the app (planned future feature with UI integration pending).
+
+---
+
+### 8. UI Simplification
 
 **Before**:
 ```dart
@@ -284,10 +372,11 @@ di<PlayerManager>().setPlaylist([episode]);
 
 ### Core Changes
 - **lib/player/data/episode_media.dart** - Added downloadCommand, factory constructor
-- **lib/podcasts/podcast_manager.dart** - Added activeDownloads ListNotifier, episode/description caching
-- **lib/podcasts/podcast_service.dart** - Now stateless (removed caching, returns record with episodes + description)
+- **lib/podcasts/podcast_manager.dart** - Added activeDownloads ListNotifier, episode/description caching, checkForUpdatesCommand
+- **lib/podcasts/podcast_service.dart** - Now stateless (removed caching, checkForUpdates, returns record with episodes + description)
 - **lib/podcasts/download_service.dart** - Removed state, kept operations only
 - **lib/app/home.dart** - Added Command.globalErrors handler
+- **lib/register_dependencies.dart** - Updated service registrations (moved NotificationsService from PodcastService to PodcastManager)
 
 ### UI Updates
 - **lib/podcasts/view/download_button.dart** - Watch command progress/isRunning
@@ -301,6 +390,9 @@ di<PlayerManager>().setPlaylist([episode]);
 - DownloadService.isDownloaded() method (use episode.isDownloaded)
 - All copyWithX() calls for setting local resource (automatic now)
 - PodcastService caching (moved to PodcastManager): _episodeCache, _podcastDescriptionCache, getPodcastEpisodesFromCache(), getPodcastDescriptionFromCache()
+- PodcastService.checkForUpdates() and _updateLock (converted to checkForUpdatesCommand)
+- PodcastManager._updateLock field (replaced by Command.isRunning)
+- NotificationsService dependency from PodcastService (moved to PodcastManager)
 
 ---
 
