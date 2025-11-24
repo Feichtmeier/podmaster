@@ -142,6 +142,27 @@ class PodcastManager {
           }
         }, initialValue: null);
 
+    togglePodcastCommand = Command.createAsync<Item, void>((item) async {
+      final feedUrl = item.feedUrl;
+      if (feedUrl == null) return;
+
+      // Check if already subscribed
+      final isSubscribed = _podcastLibraryService.podcasts.contains(feedUrl);
+
+      if (isSubscribed) {
+        await removePodcast(feedUrl: feedUrl);
+      } else {
+        // Extract metadata from Item
+        await addPodcast(
+          PodcastMetadata(
+            feedUrl: feedUrl,
+            name: item.collectionName,
+            imageUrl: item.bestArtworkUrl,
+          ),
+        );
+      }
+    }, initialValue: null);
+
     podcastsCommand.run(null);
 
     updateSearchCommand.run(null);
@@ -170,6 +191,7 @@ class PodcastManager {
     void
   >
   checkForUpdatesCommand;
+  late Command<Item, void> togglePodcastCommand;
 
   Future<void> addPodcast(PodcastMetadata metadata) async {
     await _podcastLibraryService.addPodcast(metadata);

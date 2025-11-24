@@ -33,6 +33,21 @@ class RadioManager {
       initialValue: [],
     );
 
+    toggleFavoriteStationCommand = Command.createAsync<String, void>((
+      stationUuid,
+    ) async {
+      // Check if station is already a favorite
+      final isFavorite = _radioLibraryService.favoriteStations.contains(
+        stationUuid,
+      );
+
+      if (isFavorite) {
+        await removeFavoriteStation(stationUuid);
+      } else {
+        await addFavoriteStation(stationUuid);
+      }
+    }, initialValue: null);
+
     favoriteStationsCommand.run();
   }
 
@@ -41,6 +56,7 @@ class RadioManager {
   final RadioService _radioService;
   late Command<String?, List<StationMedia>> favoriteStationsCommand;
   late Command<String?, List<StationMedia>> updateSearchCommand;
+  late Command<String, void> toggleFavoriteStationCommand;
 
   Future<List<StationMedia>> _loadMedia({
     String? country,

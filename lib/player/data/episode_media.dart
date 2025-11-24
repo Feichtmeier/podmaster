@@ -176,9 +176,7 @@ class EpisodeMedia extends UniqueMedia {
   bool get isDownloaded => downloadCommand.progress.value == 1.0;
 
   // Download command with progress and cancellation support
-  late final downloadCommand = _createDownloadCommand();
-
-  Command<void, void> _createDownloadCommand() {
+  late final downloadCommand = (() {
     final command =
         Command.createAsyncNoParamNoResultWithProgress((handle) async {
             // 1. Add to active downloads
@@ -218,5 +216,17 @@ class EpisodeMedia extends UniqueMedia {
     }
 
     return command;
-  }
+  })();
+
+  // Delete download command
+  late final deleteDownloadCommand = Command.createAsyncNoParamNoResult(
+    () async {
+      // Delete the download
+      await di<DownloadService>().deleteDownload(media: this);
+
+      // Reset download progress to 0.0
+      downloadCommand.resetProgress(progress: 0.0);
+    },
+    errorFilter: const LocalAndGlobalErrorFilter(),
+  );
 }

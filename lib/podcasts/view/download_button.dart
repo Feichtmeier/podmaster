@@ -4,7 +4,6 @@ import 'package:flutter_it/flutter_it.dart';
 import '../../extensions/build_context_x.dart';
 import '../../player/data/episode_media.dart';
 import '../data/podcast_metadata.dart';
-import '../download_service.dart';
 import '../podcast_manager.dart';
 
 class DownloadButton extends StatelessWidget {
@@ -47,8 +46,7 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
       ),
       onPressed: () {
         if (isDownloaded) {
-          di<DownloadService>().deleteDownload(media: episode);
-          episode.downloadCommand.resetProgress();
+          episode.deleteDownloadCommand.run();
         } else if (isRunning) {
           episode.downloadCommand.cancel();
         } else {

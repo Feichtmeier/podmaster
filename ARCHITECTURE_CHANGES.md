@@ -368,20 +368,115 @@ di<PlayerManager>().setPlaylist([episode]);
 
 ---
 
+### 8. Toggle Commands for UI Actions
+
+**What**: Converted direct async method calls from UI to command pattern
+
+**Why**: Consistent architecture, eliminates async/await in UI, enables reactive state management
+
+**Changes**:
+
+#### PodcastManager.togglePodcastCommand
+```dart
+late Command<Item, void> togglePodcastCommand;
+
+togglePodcastCommand = Command.createAsync<Item, void>((item) async {
+  final feedUrl = item.feedUrl;
+  if (feedUrl == null) return;
+
+  final isSubscribed = _podcastLibraryService.podcasts.contains(feedUrl);
+
+  if (isSubscribed) {
+    await removePodcast(feedUrl: feedUrl);
+  } else {
+    await addPodcast(PodcastMetadata(
+      feedUrl: feedUrl,
+      name: item.collectionName,
+      imageUrl: item.bestArtworkUrl,
+    ));
+  }
+}, initialValue: null);
+```
+
+**Benefits**:
+- UI passes full `Item` object, not constructed `PodcastMetadata`
+- Command handles state checking and metadata extraction
+- Single toggle operation instead of separate add/remove buttons
+- No async/await in UI button handlers
+
+**Updated**: `lib/podcasts/view/podcast_favorite_button.dart`
+```dart
+onPressed: () => di<PodcastManager>()
+    .togglePodcastCommand
+    .run(podcastItem),
+```
+
+#### RadioManager.toggleFavoriteStationCommand
+```dart
+late Command<String, void> toggleFavoriteStationCommand;
+
+toggleFavoriteStationCommand = Command.createAsync<String, void>(
+  (stationUuid) async {
+    final isFavorite =
+        _radioLibraryService.favoriteStations.contains(stationUuid);
+
+    if (isFavorite) {
+      await removeFavoriteStation(stationUuid);
+    } else {
+      await addFavoriteStation(stationUuid);
+    }
+  },
+  initialValue: null,
+);
+```
+
+**Updated**: `lib/radio/view/radio_browser_station_star_button.dart`
+```dart
+onPressed: () => di<RadioManager>()
+    .toggleFavoriteStationCommand
+    .run(media.id),
+```
+
+#### EpisodeMedia.deleteDownloadCommand
+```dart
+late final deleteDownloadCommand = _createDeleteDownloadCommand();
+
+Command<void, void> _createDeleteDownloadCommand() {
+  return Command.createAsyncNoParamNoResult(() async {
+    await di<DownloadService>().deleteDownload(media: this);
+    downloadCommand.resetProgress(progress: 0.0);
+  }, errorFilter: const LocalAndGlobalErrorFilter());
+}
+```
+
+**Updated**: `lib/podcasts/view/download_button.dart`
+```dart
+if (isDownloaded) {
+  episode.deleteDownloadCommand.run();
+}
+```
+
+**Pattern**: Entity-level command (on `EpisodeMedia`) alongside `downloadCommand`
+
+---
+
 ## Key Files Changed
 
 ### Core Changes
-- **lib/player/data/episode_media.dart** - Added downloadCommand, factory constructor
-- **lib/podcasts/podcast_manager.dart** - Added activeDownloads ListNotifier, episode/description caching, checkForUpdatesCommand
+- **lib/player/data/episode_media.dart** - Added downloadCommand, deleteDownloadCommand, factory constructor
+- **lib/podcasts/podcast_manager.dart** - Added activeDownloads ListNotifier, episode/description caching, checkForUpdatesCommand, togglePodcastCommand
+- **lib/radio/radio_manager.dart** - Added toggleFavoriteStationCommand
 - **lib/podcasts/podcast_service.dart** - Now stateless (removed caching, checkForUpdates, returns record with episodes + description)
 - **lib/podcasts/download_service.dart** - Removed state, kept operations only
 - **lib/app/home.dart** - Added Command.globalErrors handler
 - **lib/register_dependencies.dart** - Updated service registrations (moved NotificationsService from PodcastService to PodcastManager)
 
 ### UI Updates
-- **lib/podcasts/view/download_button.dart** - Watch command progress/isRunning
+- **lib/podcasts/view/download_button.dart** - Uses deleteDownloadCommand.run(), watches command progress/isRunning
+- **lib/podcasts/view/podcast_favorite_button.dart** - Uses togglePodcastCommand.run() instead of direct add/remove calls
+- **lib/radio/view/radio_browser_station_star_button.dart** - Uses toggleFavoriteStationCommand.run() instead of direct add/remove calls
 - **lib/podcasts/view/recent_downloads_button.dart** - Watch activeDownloads
-- **lib/podcasts/view/podcast_card.dart** - Destructures record from findEpisodes (no copyWithX)
+- **lib/podcasts/view/podcast_card.dart** - Uses fetchEpisodeMediaCommand with registerHandler for reactive loading dialog
 - **lib/podcasts/view/podcast_page.dart** - Uses PodcastManager.getPodcastDescription
 - **lib/podcasts/view/podcast_page_episode_list.dart** - Use episode.isDownloaded
 

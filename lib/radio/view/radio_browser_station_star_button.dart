@@ -19,9 +19,8 @@ class RadioBrowserStationStarButton extends StatelessWidget with WatchItMixin {
       ),
     );
     return IconButton(
-      onPressed: () => isFavorite
-          ? di<RadioManager>().removeFavoriteStation(media.id)
-          : di<RadioManager>().addFavoriteStation(media.id),
+      onPressed: () =>
+          di<RadioManager>().toggleFavoriteStationCommand.run(media.id),
       icon: Icon(isFavorite ? YaruIcons.star_filled : YaruIcons.star),
     );
   }
@@ -45,9 +44,9 @@ class RadioStationStarButton extends StatelessWidget with WatchItMixin {
     return IconButton(
       onPressed: currentMedia == null
           ? null
-          : () => isFavorite
-                ? di<RadioManager>().removeFavoriteStation(currentMedia.id)
-                : di<RadioManager>().addFavoriteStation(currentMedia.id),
+          : () => di<RadioManager>().toggleFavoriteStationCommand.run(
+              currentMedia.id,
+            ),
       icon: Icon(isFavorite ? YaruIcons.star_filled : YaruIcons.star),
     );
   }
