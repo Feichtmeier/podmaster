@@ -50,6 +50,13 @@ void registerDependencies() {
       return wm;
     })
     ..registerSingletonAsync<SharedPreferences>(SharedPreferences.getInstance)
+    ..registerSingletonAsync<SettingsService>(() async {
+      final service = SettingsService(
+        sharedPreferences: di<SharedPreferences>(),
+      );
+      await service.init();
+      return service;
+    }, dependsOn: [SharedPreferences])
     ..registerLazySingleton<VideoController>(() {
       MediaKit.ensureInitialized();
       return VideoController(
@@ -63,6 +70,14 @@ void registerDependencies() {
       dio.options.headers = {HttpHeaders.acceptEncodingHeader: '*'};
       return dio;
     }, dispose: (s) => s.close())
+    ..registerSingletonWithDependencies<DownloadService>(
+      () => DownloadService(
+        libraryService: di<PodcastLibraryService>(),
+        settingsService: di<SettingsService>(),
+        dio: di<Dio>(),
+      ),
+      dependsOn: [SettingsService],
+    )
     ..registerSingletonAsync<PlayerManager>(
       () async => AudioService.init(
         config: AudioServiceConfig(
@@ -75,37 +90,21 @@ void registerDependencies() {
               : null,
           androidNotificationChannelDescription: 'MusicPod Media Controls',
         ),
-        builder: () => PlayerManager(controller: di<VideoController>()),
+        builder: () => PlayerManager(
+          controller: di<VideoController>(),
+          podcastLibraryService: di<PodcastLibraryService>(),
+        ),
       ),
       // dependsOn: [VideoController],
       dispose: (s) async => s.dispose(),
     )
-    ..registerSingletonAsync<SettingsService>(() async {
-      final service = SettingsService(
-        sharedPreferences: di<SharedPreferences>(),
-      );
-      await service.init();
-      return service;
-    }, dependsOn: [SharedPreferences])
     ..registerLazySingleton<NotificationsService>(() => NotificationsService())
     ..registerSingletonWithDependencies<PodcastLibraryService>(
       () => PodcastLibraryService(sharedPreferences: di<SharedPreferences>()),
       dependsOn: [SharedPreferences],
     )
-    ..registerSingletonWithDependencies<DownloadService>(
-      () => DownloadService(
-        libraryService: di<PodcastLibraryService>(),
-        settingsService: di<SettingsService>(),
-        dio: di<Dio>(),
-      ),
-      dependsOn: [SettingsService],
-    )
     ..registerSingletonWithDependencies<PodcastService>(
-      () => PodcastService(
-        libraryService: di<PodcastLibraryService>(),
-        notificationsService: di<NotificationsService>(),
-        settingsService: di<SettingsService>(),
-      ),
+      () => PodcastService(settingsService: di<SettingsService>()),
       dependsOn: [PodcastLibraryService, SettingsService],
     )
     ..registerSingleton<SearchManager>(SearchManager())
@@ -116,6 +115,7 @@ void registerDependencies() {
         collectionManager: di<CollectionManager>(),
         podcastLibraryService: di<PodcastLibraryService>(),
         downloadService: di<DownloadService>(),
+        notificationsService: di<NotificationsService>(),
       ),
       dependsOn: [PodcastService],
     )

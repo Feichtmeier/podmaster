@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_it/flutter_it.dart';
-import 'package:future_loading_dialog/future_loading_dialog.dart';
 import 'package:phoenix_theme/phoenix_theme.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -8,8 +6,7 @@ import '../../common/view/safe_network_image.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
-import '../../player/player_manager.dart';
-import '../podcast_service.dart';
+import 'podcast_card_play_button.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
 
@@ -93,25 +90,8 @@ class _PodcastCardState extends State<PodcastCard> {
                             spacing: kBigPadding,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              FloatingActionButton.small(
-                                heroTag: 'podcastcardfap',
-                                onPressed: () async {
-                                  final res = await showFutureLoadingDialog(
-                                    context: context,
-                                    future: () async => di<PodcastService>()
-                                        .findEpisodes(item: widget.podcastItem),
-                                  );
-                                  if (res.isValue) {
-                                    final episodes = res.asValue!.value;
-                                    if (episodes.isNotEmpty) {
-                                      await di<PlayerManager>().setPlaylist(
-                                        episodes,
-                                        index: 0,
-                                      );
-                                    }
-                                  }
-                                },
-                                child: const Icon(Icons.play_arrow),
+                              PodcastCardPlayButton(
+                                podcastItem: widget.podcastItem,
                               ),
                               PodcastFavoriteButton.floating(
                                 podcastItem: widget.podcastItem,

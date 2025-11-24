@@ -5,6 +5,10 @@ import 'package:podcast_search/podcast_search.dart';
 import '../collection/collection_manager.dart';
 import '../common/logging.dart';
 import '../extensions/country_x.dart';
+import '../extensions/date_time_x.dart';
+import '../extensions/podcast_x.dart';
+import '../extensions/string_x.dart';
+import '../notifications/notifications_service.dart';
 import '../player/data/episode_media.dart';
 import '../search/search_manager.dart';
 import 'data/podcast_metadata.dart';
@@ -24,9 +28,11 @@ class PodcastManager {
     required SearchManager searchManager,
     required CollectionManager collectionManager,
     required PodcastLibraryService podcastLibraryService,
+    required NotificationsService notificationsService,
   }) : _podcastService = podcastService,
        _downloadService = downloadService,
-       _podcastLibraryService = podcastLibraryService {
+       _podcastLibraryService = podcastLibraryService,
+       _notificationsService = notificationsService {
     Command.globalExceptionHandler = (e, s) {
       printMessageInDebugMode(e.error, s);
     };
@@ -55,7 +61,7 @@ class PodcastManager {
     );
 
     fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>(
-      (podcast) => _podcastService.findEpisodes(item: podcast),
+      (podcast) => findEpisodes(item: podcast),
       initialValue: [],
     );
 
@@ -67,6 +73,7 @@ class PodcastManager {
   final PodcastService _podcastService;
   final PodcastLibraryService _podcastLibraryService;
   final DownloadService _downloadService;
+  final NotificationsService _notificationsService;
 
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
@@ -122,5 +129,98 @@ class PodcastManager {
   Future<void> removePodcast({required String feedUrl}) async {
     await _podcastLibraryService.removePodcast(feedUrl);
     podcastsCommand.run();
+  }
+
+  final Map<String, Podcast> _podcastCache = {};
+  String? getPodcastDescriptionFromCache(String? feedUrl) =>
+      _podcastCache[feedUrl]?.description;
+
+  Future<List<EpisodeMedia>> findEpisodes({
+    Item? item,
+    String? feedUrl,
+    bool loadFromCache = true,
+  }) async {
+    if (item == null && item?.feedUrl == null && feedUrl == null) {
+      return Future.error(
+        ArgumentError('Either item or feedUrl must be provided'),
+      );
+    }
+
+    final url = feedUrl ?? item!.feedUrl!;
+
+    Podcast? podcast;
+    if (loadFromCache && _podcastCache.containsKey(url)) {
+      podcast = _podcastCache[url];
+    } else {
+      podcast = await _podcastService.fetchPodcast(item: item, feedUrl: url);
+      if (podcast != null) {
+        _podcastCache[url] = podcast;
+      }
+    }
+
+    if (podcast?.image != null) {
+      _podcastLibraryService.addSubscribedPodcastImage(
+        feedUrl: url,
+        imageUrl: podcast!.image!,
+      );
+    } else if (item?.bestArtworkUrl != null) {
+      _podcastLibraryService.addSubscribedPodcastImage(
+        feedUrl: url,
+        imageUrl: item!.bestArtworkUrl!,
+      );
+    }
+
+    return podcast?.toEpisodeMediaList(url, item) ?? [];
+  }
+
+  Future<void> checkForUpdates({
+    Set<String>? feedUrls,
+    required String updateMessage,
+    required String Function(int length) multiUpdateMessage,
+  }) async {
+    final newUpdateFeedUrls = <String>{};
+
+    for (final feedUrl in (feedUrls ?? _podcastLibraryService.podcasts)) {
+      final storedTimeStamp = _podcastLibraryService.getPodcastLastUpdated(
+        feedUrl,
+      );
+      DateTime? feedLastUpdated;
+      try {
+        feedLastUpdated = await Feed.feedLastUpdated(url: feedUrl);
+      } on Exception catch (e) {
+        printMessageInDebugMode(e);
+      }
+      final name = _podcastLibraryService.getSubscribedPodcastName(feedUrl);
+
+      printMessageInDebugMode('checking update for: ${name ?? feedUrl} ');
+      printMessageInDebugMode(
+        'storedTimeStamp: ${storedTimeStamp ?? 'no timestamp'}',
+      );
+      printMessageInDebugMode(
+        'feedLastUpdated: ${feedLastUpdated?.podcastTimeStamp ?? 'no timestamp'}',
+      );
+
+      if (feedLastUpdated == null) continue;
+
+      await _podcastLibraryService.addPodcastLastUpdated(
+        feedUrl: feedUrl,
+        timestamp: feedLastUpdated.podcastTimeStamp,
+      );
+
+      if (storedTimeStamp != null &&
+          !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
+        await findEpisodes(feedUrl: feedUrl, loadFromCache: false);
+        await _podcastLibraryService.addPodcastUpdate(feedUrl, feedLastUpdated);
+
+        newUpdateFeedUrls.add(feedUrl);
+      }
+    }
+
+    if (newUpdateFeedUrls.isNotEmpty) {
+      final msg = newUpdateFeedUrls.length == 1
+          ? '$updateMessage${_podcastCache[newUpdateFeedUrls.first]?.title != null ? ' ${_podcastCache[newUpdateFeedUrls.first]?.title}' : ''}'
+          : multiUpdateMessage(newUpdateFeedUrls.length);
+      await _notificationsService.notify(message: msg);
+    }
   }
 }

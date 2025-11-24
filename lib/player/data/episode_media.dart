@@ -6,42 +6,7 @@ import '../../extensions/date_time_x.dart';
 import 'unique_media.dart';
 
 class EpisodeMedia extends UniqueMedia {
-  // Factory constructor that computes download path only once
-  factory EpisodeMedia(
-    String resource, {
-    Map<String, dynamic>? extras,
-    Map<String, String>? httpHeaders,
-    Duration? start,
-    Duration? end,
-    required Episode episode,
-    required String feedUrl,
-    int? bitRate,
-    String? albumArtUrl,
-    List<String> genres = const [],
-    String? collectionName,
-    String? artist,
-    String? downloadPath,
-  }) {
-    final effectiveResource = downloadPath ?? resource;
-
-    return EpisodeMedia._(
-      effectiveResource,
-      extras: extras,
-      httpHeaders: httpHeaders,
-      start: start,
-      end: end,
-      episode: episode,
-      feedUrl: feedUrl,
-      bitRate: bitRate,
-      albumArtUrl: albumArtUrl,
-      genres: genres,
-      collectionName: collectionName,
-      artist: artist,
-    );
-  }
-
-  // Private constructor that receives pre-computed values
-  EpisodeMedia._(
+  EpisodeMedia(
     super.resource, {
     super.extras,
     super.httpHeaders,
