@@ -14,10 +14,25 @@ class RadioBrowserStationStarButton extends StatelessWidget with WatchItMixin {
   @override
   Widget build(BuildContext context) {
     final isFavorite = watchValue(
-      (RadioManager s) => s.favoriteStationsCommand.select(
+      (RadioManager s) => s.getFavoriteStationsCommand.select(
         (favorites) => favorites.any((m) => m.id == media.id),
       ),
     );
+
+    // Error handler for favorite toggle
+    registerHandler(
+      select: (RadioManager m) => m.toggleFavoriteStationCommand.errors,
+      handler: (context, error, cancel) {
+        if (error != null && error.error is! UndoException) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update favorite: ${error.error}'),
+            ),
+          );
+        }
+      },
+    );
+
     return IconButton(
       onPressed: () =>
           di<RadioManager>().toggleFavoriteStationCommand.run(media.id),
@@ -37,10 +52,25 @@ class RadioStationStarButton extends StatelessWidget with WatchItMixin {
       preserveState: false,
     ).data;
     final isFavorite = watchValue(
-      (RadioManager s) => s.favoriteStationsCommand.select(
+      (RadioManager s) => s.getFavoriteStationsCommand.select(
         (favorites) => favorites.any((m) => m.id == currentMedia?.id),
       ),
     );
+
+    // Error handler for favorite toggle
+    registerHandler(
+      select: (RadioManager m) => m.toggleFavoriteStationCommand.errors,
+      handler: (context, error, cancel) {
+        if (error != null && error.error is! UndoException) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update favorite: ${error.error}'),
+            ),
+          );
+        }
+      },
+    );
+
     return IconButton(
       onPressed: currentMedia == null
           ? null
