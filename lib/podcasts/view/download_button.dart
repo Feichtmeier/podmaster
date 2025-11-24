@@ -83,7 +83,7 @@ class _DownloadProgress extends StatelessWidget with WatchItMixin {
       dimension: (context.theme.buttonTheme.height / 2 * 2) - 3,
       child: CircularProgressIndicator(
         padding: EdgeInsets.zero,
-        value: progress > 0 && progress < 1.0 ? progress : null,
+        value: progress == 1.0 ? 0 : progress,
         backgroundColor: Colors.transparent,
       ),
     );

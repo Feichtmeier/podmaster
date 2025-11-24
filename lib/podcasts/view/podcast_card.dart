@@ -7,8 +7,7 @@ import '../../common/view/safe_network_image.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
-import '../../player/player_manager.dart';
-import '../podcast_manager.dart';
+import 'podcast_card_play_button.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
 
@@ -26,31 +25,6 @@ class _PodcastCardState extends State<PodcastCard> {
 
   @override
   Widget build(BuildContext context) {
-    // Handle loading dialog and auto-play when episodes are fetched
-    registerHandler(
-      select: (PodcastManager m) => m.fetchEpisodeMediaCommand.results,
-      handler: (context, result, cancel) {
-        if (result.isRunning) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const Center(child: CircularProgressIndicator()),
-          );
-        } else if (result.isSuccess) {
-          // Dismiss dialog
-          Navigator.of(context).pop();
-
-          // Play episodes if available
-          if (result.data != null && result.data!.isNotEmpty) {
-            di<PlayerManager>().setPlaylist(result.data!, index: 0);
-          }
-        } else if (result.hasError) {
-          // Dismiss dialog on error
-          Navigator.of(context).pop();
-        }
-      },
-    );
-
     final theme = context.theme;
     final isLight = theme.colorScheme.isLight;
     const borderRadiusGeometry = BorderRadiusGeometry.only(
@@ -117,12 +91,8 @@ class _PodcastCardState extends State<PodcastCard> {
                             spacing: kBigPadding,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              FloatingActionButton.small(
-                                heroTag: 'podcastcardfap',
-                                onPressed: () => di<PodcastManager>()
-                                    .fetchEpisodeMediaCommand
-                                    .run(widget.podcastItem),
-                                child: const Icon(Icons.play_arrow),
+                              PodcastCardPlayButton(
+                                podcastItem: widget.podcastItem,
                               ),
                               PodcastFavoriteButton.floating(
                                 podcastItem: widget.podcastItem,

@@ -108,7 +108,7 @@ void registerDependencies() {
         podcastLibraryService: di<PodcastLibraryService>(),
         notificationsService: di<NotificationsService>(),
       ),
-      dependsOn: [PodcastService, NotificationsService],
+      dependsOn: [PodcastService],
     )
     ..registerLazySingleton<ExternalPathService>(
       () => const ExternalPathService(),

@@ -14,7 +14,7 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    callOnce(
+    callOnceAfterThisBuild(
       (context) => di<PodcastManager>().fetchEpisodeMediaCommand(podcastItem),
     );
 

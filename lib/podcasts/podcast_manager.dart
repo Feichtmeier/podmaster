@@ -55,26 +55,10 @@ class PodcastManager {
       (filterText, sub) => getSubscribedPodcastsCommand.run(filterText),
     );
 
-    fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>((
-      podcast,
-    ) async {
-      final feedUrl = podcast.feedUrl;
-      if (feedUrl == null) return [];
-
-      // Check cache first - returns same instances so downloadCommands work
-      if (_episodeCache.containsKey(feedUrl)) {
-        return _episodeCache[feedUrl]!;
-      }
-
-      // Fetch from service (no longer caches internally)
-      final result = await _podcastService.findEpisodes(item: podcast);
-
-      // Cache both episodes and description
-      _episodeCache[feedUrl] = result.episodes;
-      _podcastDescriptionCache[feedUrl] = result.description;
-
-      return result.episodes;
-    }, initialValue: []);
+    fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>(
+      fetchEpisodes,
+      initialValue: [],
+    );
 
     checkForUpdatesCommand =
         Command.createAsync<
@@ -200,6 +184,25 @@ class PodcastManager {
     getSubscribedPodcastsCommand.run(null);
 
     updateSearchCommand.run(null);
+  }
+
+  Future<List<EpisodeMedia>> fetchEpisodes(podcast) async {
+    final feedUrl = podcast.feedUrl;
+    if (feedUrl == null) return [];
+
+    // Check cache first - returns same instances so downloadCommands work
+    if (_episodeCache.containsKey(feedUrl)) {
+      return _episodeCache[feedUrl]!;
+    }
+
+    // Fetch from service (no longer caches internally)
+    final result = await _podcastService.findEpisodes(item: podcast);
+
+    // Cache both episodes and description
+    _episodeCache[feedUrl] = result.episodes;
+    _podcastDescriptionCache[feedUrl] = result.description;
+
+    return result.episodes;
   }
 
   final PodcastService _podcastService;

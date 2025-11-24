@@ -49,12 +49,12 @@ class EpisodeMedia extends UniqueMedia {
 
   // Private constructor that receives pre-computed values
   EpisodeMedia._(
-    String resource, {
+    super.resource, {
     required bool wasDownloaded,
-    Map<String, dynamic>? extras,
-    Map<String, String>? httpHeaders,
-    Duration? start,
-    Duration? end,
+    super.extras,
+    super.httpHeaders,
+    super.start,
+    super.end,
     required this.episode,
     required String feedUrl,
     int? bitRate,
@@ -68,14 +68,7 @@ class EpisodeMedia extends UniqueMedia {
        _genres = genres,
        _collectionName = collectionName,
        _artist = artist,
-       _wasDownloadedOnCreation = wasDownloaded,
-       super(
-         resource,
-         extras: extras,
-         httpHeaders: httpHeaders,
-         start: start,
-         end: end,
-       );
+       _wasDownloadedOnCreation = wasDownloaded;
 
   final bool _wasDownloadedOnCreation;
   final Episode episode;
