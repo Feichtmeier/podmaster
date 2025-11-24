@@ -172,7 +172,67 @@ bool get isDownloaded => downloadCommand.progress.value == 1.0;
 
 ---
 
-### 6. UI Simplification
+### 6. Episode Cache Migration
+
+**What**: Moved episode and description caching from PodcastService to PodcastManager
+
+**Why**: Aligns with architecture pattern - Services are stateless, Managers handle state and caching
+
+**Changes in PodcastService**:
+- ❌ Removed `_episodeCache` map
+- ❌ Removed `_podcastDescriptionCache` map
+- ❌ Removed `getPodcastEpisodesFromCache()` method
+- ❌ Removed `getPodcastDescriptionFromCache()` method
+- ❌ Removed `loadFromCache` parameter
+- ✅ Changed `findEpisodes()` to return record: `({List<EpisodeMedia> episodes, String? description})`
+
+**Changes in PodcastManager**:
+```dart
+// Episode cache - ensures same instances across app for command state
+final _episodeCache = <String, List<EpisodeMedia>>{};
+final _podcastDescriptionCache = <String, String?>{};
+
+// Updated fetchEpisodeMediaCommand to cache both episodes and description
+fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>(
+  (podcast) async {
+    final feedUrl = podcast.feedUrl;
+    if (feedUrl == null) return [];
+
+    // Check cache first - returns same instances so downloadCommands work
+    if (_episodeCache.containsKey(feedUrl)) {
+      return _episodeCache[feedUrl]!;
+    }
+
+    // Fetch from service - destructure the record
+    final result = await _podcastService.findEpisodes(item: podcast);
+
+    // Cache both episodes and description
+    _episodeCache[feedUrl] = result.episodes;
+    _podcastDescriptionCache[feedUrl] = result.description;
+
+    return result.episodes;
+  },
+  initialValue: [],
+);
+
+// New method to get cached description
+String? getPodcastDescription(String? feedUrl) =>
+    _podcastDescriptionCache[feedUrl];
+```
+
+**Benefits**:
+- ✅ Service is now truly stateless (only operations, no caching)
+- ✅ Manager owns all caching logic in one place
+- ✅ Same episode instances returned from cache (ensures downloadCommands work correctly)
+- ✅ Description cached alongside episodes for efficiency
+
+**Updated UI**:
+- `podcast_page.dart` now calls `di<PodcastManager>().getPodcastDescription(feedUrl)`
+- `podcast_card.dart` destructures the record: `final episodes = result.episodes`
+
+---
+
+### 7. UI Simplification
 
 **Before**:
 ```dart
@@ -224,20 +284,23 @@ di<PlayerManager>().setPlaylist([episode]);
 
 ### Core Changes
 - **lib/player/data/episode_media.dart** - Added downloadCommand, factory constructor
-- **lib/podcasts/podcast_manager.dart** - Added activeDownloads ListNotifier
+- **lib/podcasts/podcast_manager.dart** - Added activeDownloads ListNotifier, episode/description caching
+- **lib/podcasts/podcast_service.dart** - Now stateless (removed caching, returns record with episodes + description)
 - **lib/podcasts/download_service.dart** - Removed state, kept operations only
 - **lib/app/home.dart** - Added Command.globalErrors handler
 
 ### UI Updates
 - **lib/podcasts/view/download_button.dart** - Watch command progress/isRunning
 - **lib/podcasts/view/recent_downloads_button.dart** - Watch activeDownloads
-- **lib/podcasts/view/podcast_card.dart** - Simplified (no copyWithX)
+- **lib/podcasts/view/podcast_card.dart** - Destructures record from findEpisodes (no copyWithX)
+- **lib/podcasts/view/podcast_page.dart** - Uses PodcastManager.getPodcastDescription
 - **lib/podcasts/view/podcast_page_episode_list.dart** - Use episode.isDownloaded
 
 ### Removed
 - messageStream and downloadMessageStreamHandler (replaced by Command.globalErrors)
 - DownloadService.isDownloaded() method (use episode.isDownloaded)
 - All copyWithX() calls for setting local resource (automatic now)
+- PodcastService caching (moved to PodcastManager): _episodeCache, _podcastDescriptionCache, getPodcastEpisodesFromCache(), getPodcastDescriptionFromCache()
 
 ---
 

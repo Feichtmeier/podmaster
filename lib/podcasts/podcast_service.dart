@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -122,16 +121,14 @@ class PodcastService {
 
       if (storedTimeStamp != null &&
           !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
-        await findEpisodes(feedUrl: feedUrl, loadFromCache: false);
         await _libraryService.addPodcastUpdate(feedUrl, feedLastUpdated);
-
         newUpdateFeedUrls.add(feedUrl);
       }
     }
 
     if (newUpdateFeedUrls.isNotEmpty) {
       final msg = newUpdateFeedUrls.length == 1
-          ? '$updateMessage${_episodeCache[newUpdateFeedUrls.first]?.firstOrNull?.collectionName != null ? ' ${_episodeCache[newUpdateFeedUrls.first]?.firstOrNull?.collectionName}' : ''}'
+          ? updateMessage
           : multiUpdateMessage(newUpdateFeedUrls.length);
       await _notificationsService.notify(message: msg);
     }
@@ -139,34 +136,24 @@ class PodcastService {
     _updateLock = false;
   }
 
-  List<EpisodeMedia>? getPodcastEpisodesFromCache(String? feedUrl) =>
-      _episodeCache[feedUrl];
-  final Map<String, List<EpisodeMedia>> _episodeCache = {};
-
-  final Map<String, String?> _podcastDescriptionCache = {};
-  String? getPodcastDescriptionFromCache(String? feedUrl) =>
-      _podcastDescriptionCache[feedUrl];
-
-  Future<List<EpisodeMedia>> findEpisodes({
+  // Stateless operation - just fetches episodes and description, no caching
+  Future<({List<EpisodeMedia> episodes, String? description})> findEpisodes({
     Item? item,
     String? feedUrl,
-    bool loadFromCache = true,
   }) async {
     if (item == null && item?.feedUrl == null && feedUrl == null) {
       printMessageInDebugMode('findEpisodes called without feedUrl or item');
-      return Future.value([]);
+      return (episodes: <EpisodeMedia>[], description: null);
     }
 
     final url = feedUrl ?? item!.feedUrl!;
 
-    if (_episodeCache.containsKey(url) && loadFromCache) {
-      if (item?.bestArtworkUrl != null) {
-        _libraryService.addSubscribedPodcastImage(
-          feedUrl: url,
-          imageUrl: item!.bestArtworkUrl!,
-        );
-      }
-      return _episodeCache[url]!;
+    // Save artwork if available
+    if (item?.bestArtworkUrl != null) {
+      _libraryService.addSubscribedPodcastImage(
+        feedUrl: url,
+        imageUrl: item!.bestArtworkUrl!,
+      );
     }
 
     final Podcast? podcast = await compute(loadPodcast, url);
@@ -179,10 +166,7 @@ class PodcastService {
 
     final episodes = podcast?.toEpisodeMediaList(url, item) ?? <EpisodeMedia>[];
 
-    _episodeCache[url] = episodes;
-    _podcastDescriptionCache[url] = podcast?.description;
-
-    return episodes;
+    return (episodes: episodes, description: podcast?.description);
   }
 }
 

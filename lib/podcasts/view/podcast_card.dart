@@ -102,7 +102,8 @@ class _PodcastCardState extends State<PodcastCard> {
                                         .findEpisodes(item: widget.podcastItem),
                                   );
                                   if (res.isValue) {
-                                    final episodes = res.asValue!.value;
+                                    final result = res.asValue!.value;
+                                    final episodes = result.episodes;
                                     if (episodes.isNotEmpty) {
                                       await di<PlayerManager>().setPlaylist(
                                         episodes,

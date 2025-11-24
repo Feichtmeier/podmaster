@@ -50,10 +50,26 @@ class PodcastManager {
       (filterText, sub) => podcastsCommand.run(filterText),
     );
 
-    fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>(
-      (podcast) => _podcastService.findEpisodes(item: podcast),
-      initialValue: [],
-    );
+    fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>((
+      podcast,
+    ) async {
+      final feedUrl = podcast.feedUrl;
+      if (feedUrl == null) return [];
+
+      // Check cache first - returns same instances so downloadCommands work
+      if (_episodeCache.containsKey(feedUrl)) {
+        return _episodeCache[feedUrl]!;
+      }
+
+      // Fetch from service (no longer caches internally)
+      final result = await _podcastService.findEpisodes(item: podcast);
+
+      // Cache both episodes and description
+      _episodeCache[feedUrl] = result.episodes;
+      _podcastDescriptionCache[feedUrl] = result.description;
+
+      return result.episodes;
+    }, initialValue: []);
 
     podcastsCommand.run(null);
 
@@ -65,6 +81,10 @@ class PodcastManager {
 
   // Track episodes currently downloading
   final activeDownloads = ListNotifier<EpisodeMedia>();
+
+  // Episode cache - ensures same instances across app for command state
+  final _episodeCache = <String, List<EpisodeMedia>>{};
+  final _podcastDescriptionCache = <String, String?>{};
 
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
@@ -79,4 +99,7 @@ class PodcastManager {
     await _podcastLibraryService.removePodcast(feedUrl);
     podcastsCommand.run();
   }
+
+  String? getPodcastDescription(String? feedUrl) =>
+      _podcastDescriptionCache[feedUrl];
 }
