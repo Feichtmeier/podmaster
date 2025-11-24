@@ -218,15 +218,19 @@ class EpisodeMedia extends UniqueMedia {
     return command;
   })();
 
-  // Delete download command
-  late final deleteDownloadCommand = Command.createAsyncNoParamNoResult(
-    () async {
-      // Delete the download
-      await di<DownloadService>().deleteDownload(media: this);
+  // Delete download command with optimistic update
+  late final deleteDownloadCommand =
+      Command.createAsyncNoParamNoResult(() async {
+          // Optimistic: reset progress immediately for instant UI feedback
+          downloadCommand.resetProgress(progress: 0.0);
 
-      // Reset download progress to 0.0
-      downloadCommand.resetProgress(progress: 0.0);
-    },
-    errorFilter: const LocalAndGlobalErrorFilter(),
-  );
+          // Then delete async
+          await di<DownloadService>().deleteDownload(media: this);
+        }, errorFilter: const LocalAndGlobalErrorFilter())
+        ..errors.listen((error, _) {
+          // Simple rollback: restore progress on error
+          if (error != null) {
+            downloadCommand.resetProgress(progress: 1.0);
+          }
+        });
 }

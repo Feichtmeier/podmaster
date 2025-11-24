@@ -34,9 +34,7 @@ class _PodcastCardState extends State<PodcastCard> {
           showDialog(
             context: context,
             barrierDismissible: false,
-            builder: (_) => const Center(
-              child: CircularProgressIndicator(),
-            ),
+            builder: (_) => const Center(child: CircularProgressIndicator()),
           );
         } else if (result.isSuccess) {
           // Dismiss dialog

@@ -45,14 +45,14 @@ class PodcastManager {
         .debounce(const Duration(milliseconds: 500))
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
-    podcastsCommand = Command.createSync(
+    getSubscribedPodcastsCommand = Command.createSync(
       (filterText) =>
           podcastLibraryService.getFilteredPodcastsWithMetadata(filterText),
       initialValue: [],
     );
 
     collectionManager.textChangedCommand.listen(
-      (filterText, sub) => podcastsCommand.run(filterText),
+      (filterText, sub) => getSubscribedPodcastsCommand.run(filterText),
     );
 
     fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>((
@@ -142,28 +142,62 @@ class PodcastManager {
           }
         }, initialValue: null);
 
-    togglePodcastCommand = Command.createAsync<Item, void>((item) async {
-      final feedUrl = item.feedUrl;
-      if (feedUrl == null) return;
+    togglePodcastSubscriptionCommand =
+        Command.createUndoableNoResult<
+          Item,
+          ({bool wasAdd, PodcastMetadata metadata})
+        >(
+          (item, stack) async {
+            final feedUrl = item.feedUrl;
+            if (feedUrl == null) return;
 
-      // Check if already subscribed
-      final isSubscribed = _podcastLibraryService.podcasts.contains(feedUrl);
+            final currentList = getSubscribedPodcastsCommand.value;
+            final isSubscribed = currentList.any((p) => p.feedUrl == feedUrl);
 
-      if (isSubscribed) {
-        await removePodcast(feedUrl: feedUrl);
-      } else {
-        // Extract metadata from Item
-        await addPodcast(
-          PodcastMetadata(
-            feedUrl: feedUrl,
-            name: item.collectionName,
-            imageUrl: item.bestArtworkUrl,
-          ),
+            final metadata = PodcastMetadata(
+              feedUrl: feedUrl,
+              name: item.collectionName,
+              imageUrl: item.bestArtworkUrl,
+            );
+
+            // Store operation info for undo
+            stack.push((wasAdd: !isSubscribed, metadata: metadata));
+
+            // Optimistic update: modify list directly
+            if (isSubscribed) {
+              getSubscribedPodcastsCommand.value = currentList
+                  .where((p) => p.feedUrl != feedUrl)
+                  .toList();
+            } else {
+              getSubscribedPodcastsCommand.value = [...currentList, metadata];
+            }
+
+            // Async persist
+            await (isSubscribed
+                ? _podcastLibraryService.removePodcast(feedUrl)
+                : _podcastLibraryService.addPodcast(metadata));
+          },
+          undo: (stack, reason) async {
+            final undoData = stack.pop();
+            final currentList = getSubscribedPodcastsCommand.value;
+
+            if (undoData.wasAdd) {
+              // Was an add, so remove it
+              getSubscribedPodcastsCommand.value = currentList
+                  .where((p) => p.feedUrl != undoData.metadata.feedUrl)
+                  .toList();
+            } else {
+              // Was a remove, so add it back
+              getSubscribedPodcastsCommand.value = [
+                ...currentList,
+                undoData.metadata,
+              ];
+            }
+          },
+          undoOnExecutionFailure: true,
         );
-      }
-    }, initialValue: null);
 
-    podcastsCommand.run(null);
+    getSubscribedPodcastsCommand.run(null);
 
     updateSearchCommand.run(null);
   }
@@ -181,7 +215,7 @@ class PodcastManager {
 
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
-  late Command<String?, List<PodcastMetadata>> podcastsCommand;
+  late Command<String?, List<PodcastMetadata>> getSubscribedPodcastsCommand;
   late Command<
     ({
       Set<String>? feedUrls,
@@ -191,16 +225,16 @@ class PodcastManager {
     void
   >
   checkForUpdatesCommand;
-  late Command<Item, void> togglePodcastCommand;
+  late final Command<Item, void> togglePodcastSubscriptionCommand;
 
   Future<void> addPodcast(PodcastMetadata metadata) async {
     await _podcastLibraryService.addPodcast(metadata);
-    podcastsCommand.run();
+    getSubscribedPodcastsCommand.run();
   }
 
   Future<void> removePodcast({required String feedUrl}) async {
     await _podcastLibraryService.removePodcast(feedUrl);
-    podcastsCommand.run();
+    getSubscribedPodcastsCommand.run();
   }
 
   String? getPodcastDescription(String? feedUrl) =>

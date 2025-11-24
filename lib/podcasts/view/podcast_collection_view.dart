@@ -21,7 +21,9 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
       (CollectionManager m) => m.showOnlyDownloadsNotifier,
     );
 
-    return watchValue((PodcastManager m) => m.podcastsCommand.results).toWidget(
+    return watchValue(
+      (PodcastManager m) => m.getSubscribedPodcastsCommand.results,
+    ).toWidget(
       onData: (pees, _) {
         final podcasts = showOnlyDownloads
             ? pees.where((p) => feedsWithDownloads.contains(p.feedUrl))
