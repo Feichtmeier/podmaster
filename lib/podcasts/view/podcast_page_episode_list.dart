@@ -4,7 +4,6 @@ import 'package:podcast_search/podcast_search.dart';
 
 import '../../collection/collection_manager.dart';
 import '../../player/player_manager.dart';
-import '../download_manager.dart';
 import '../podcast_manager.dart';
 import 'episode_tile.dart';
 
@@ -28,11 +27,7 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
     ).toWidget(
       onData: (episodesX, param) {
         final episodes = downloadsOnly
-            ? episodesX
-                  .where(
-                    (e) => di<DownloadManager>().getDownload(e.url) != null,
-                  )
-                  .toList()
+            ? episodesX.where((e) => e.isDownloaded).toList()
             : episodesX;
         return SliverList.builder(
           itemCount: episodes.length,

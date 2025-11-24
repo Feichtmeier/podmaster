@@ -9,7 +9,6 @@ import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
 import '../../player/player_manager.dart';
-import '../download_manager.dart';
 import '../podcast_service.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
@@ -104,17 +103,9 @@ class _PodcastCardState extends State<PodcastCard> {
                                   );
                                   if (res.isValue) {
                                     final episodes = res.asValue!.value;
-                                    final withDownloads = episodes.map((e) {
-                                      final download = di<DownloadManager>()
-                                          .getDownload(e.id);
-                                      if (download != null) {
-                                        return e.copyWithX(resource: download);
-                                      }
-                                      return e;
-                                    }).toList();
-                                    if (withDownloads.isNotEmpty) {
+                                    if (episodes.isNotEmpty) {
                                       await di<PlayerManager>().setPlaylist(
-                                        withDownloads,
+                                        episodes,
                                         index: 0,
                                       );
                                     }

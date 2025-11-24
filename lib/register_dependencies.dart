@@ -16,7 +16,7 @@ import 'common/platforms.dart';
 import 'notifications/notifications_service.dart';
 import 'online_art/online_art_service.dart';
 import 'player/player_manager.dart';
-import 'podcasts/download_manager.dart';
+import 'podcasts/download_service.dart';
 import 'podcasts/podcast_library_service.dart';
 import 'podcasts/podcast_manager.dart';
 import 'podcasts/podcast_service.dart';
@@ -120,8 +120,8 @@ void registerDependencies() {
       ),
       dependsOn: [SettingsService],
     )
-    ..registerLazySingleton<DownloadManager>(
-      () => DownloadManager(
+    ..registerLazySingleton<DownloadService>(
+      () => DownloadService(
         libraryService: di<PodcastLibraryService>(),
         dio: di<Dio>(),
       ),

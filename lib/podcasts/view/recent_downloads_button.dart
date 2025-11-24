@@ -4,7 +4,7 @@ import 'package:yaru/yaru.dart';
 
 import '../../extensions/build_context_x.dart';
 import '../../player/player_manager.dart';
-import '../download_manager.dart';
+import '../podcast_manager.dart';
 import 'download_button.dart';
 
 class RecentDownloadsButton extends StatefulWidget
@@ -42,18 +42,11 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
-    final episodeToProgress = watchPropertyValue(
-      (DownloadManager m) => m.episodeToProgress,
-    );
-    final episodeToProgressLength = watchPropertyValue(
-      (DownloadManager m) => m.episodeToProgress.length,
-    );
+    final activeDownloads = watchValue((PodcastManager m) => m.activeDownloads);
 
-    final downloadsInProgress = watchPropertyValue(
-      (DownloadManager m) => m.getDownloadsInProgress(),
-    );
+    final hasActiveDownloads = activeDownloads.isNotEmpty;
 
-    if (downloadsInProgress) {
+    if (hasActiveDownloads) {
       if (!_controller.isAnimating) {
         _controller.repeat(reverse: true);
       }
@@ -65,23 +58,19 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 300),
-      opacity: episodeToProgressLength > 0 ? 1.0 : 0.0,
+      opacity: hasActiveDownloads ? 1.0 : 0.0,
       child: IconButton(
-        icon: downloadsInProgress
+        icon: hasActiveDownloads
             ? FadeTransition(
                 opacity: _animation,
                 child: Icon(
                   Icons.download_for_offline,
-                  color: downloadsInProgress
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface,
+                  color: theme.colorScheme.primary,
                 ),
               )
             : Icon(
                 Icons.download_for_offline,
-                color: episodeToProgress.isNotEmpty
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurface,
+                color: theme.colorScheme.onSurface,
               ),
         onPressed: () => showDialog(
           context: context,
@@ -98,32 +87,20 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
               child: CustomScrollView(
                 slivers: [
                   SliverList.builder(
-                    itemCount: episodeToProgress.keys.length,
-                    itemBuilder: (context, index) => ListTile(
-                      onTap: () {
-                        final download = di<DownloadManager>().getDownload(
-                          episodeToProgress.keys.elementAt(index).url,
-                        );
-                        di<PlayerManager>().setPlaylist([
-                          if (download != null)
-                            episodeToProgress.keys
-                                .elementAt(index)
-                                .copyWithX(resource: download),
-                        ]);
-                      },
-                      title: Text(
-                        episodeToProgress.keys.elementAt(index).title ??
-                            context.l10n.unknown,
-                      ),
-                      subtitle: Text(
-                        episodeToProgress.keys.elementAt(index).artist ??
-                            context.l10n.unknown,
-                      ),
-                      trailing: DownloadButton(
-                        episode: episodeToProgress.keys.elementAt(index),
-                        addPodcast: () {},
-                      ),
-                    ),
+                    itemCount: activeDownloads.length,
+                    itemBuilder: (context, index) {
+                      final episode = activeDownloads[index];
+                      return ListTile(
+                        onTap: () {
+                          if (episode.isDownloaded) {
+                            di<PlayerManager>().setPlaylist([episode]);
+                          }
+                        },
+                        title: Text(episode.title ?? context.l10n.unknown),
+                        subtitle: Text(episode.artist ?? context.l10n.unknown),
+                        trailing: DownloadButton(episode: episode),
+                      );
+                    },
                   ),
                 ],
               ),

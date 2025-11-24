@@ -62,6 +62,10 @@ class PodcastManager {
 
   final PodcastService _podcastService;
   final PodcastLibraryService _podcastLibraryService;
+
+  // Track episodes currently downloading
+  final activeDownloads = ListNotifier<EpisodeMedia>();
+
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
   late Command<String?, List<PodcastMetadata>> podcastsCommand;
