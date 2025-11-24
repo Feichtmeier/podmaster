@@ -5,7 +5,7 @@ import 'package:podcast_search/podcast_search.dart';
 
 import '../../collection/collection_manager.dart';
 import '../../common/view/ui_constants.dart';
-import '../download_service.dart';
+import '../podcast_library_service.dart';
 import '../podcast_manager.dart';
 import 'podcast_card.dart';
 
@@ -14,9 +14,16 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    final feedsWithDownloads = watchPropertyValue(
-      (DownloadService m) => m.feedsWithDownloads,
-    );
+    final feedsWithDownloads =
+        watchStream(
+          (PodcastLibraryService m) =>
+              m.propertiesChanged.map((_) => m.feedsWithDownloads),
+          initialValue: di<PodcastLibraryService>().feedsWithDownloads,
+          allowStreamChange: true,
+          preserveState: false,
+        ).data ??
+        <String>{};
+
     final showOnlyDownloads = watchValue(
       (CollectionManager m) => m.showOnlyDownloadsNotifier,
     );

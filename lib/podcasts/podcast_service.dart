@@ -6,7 +6,6 @@ import 'package:podcast_search/podcast_search.dart';
 
 import '../common/logging.dart';
 import '../extensions/date_time_x.dart';
-import '../extensions/podcast_x.dart';
 import '../extensions/shared_preferences_x.dart';
 import '../extensions/string_x.dart';
 import '../notifications/notifications_service.dart';
@@ -177,7 +176,25 @@ class PodcastService {
       );
     }
 
-    final episodes = podcast?.toEpisodeMediaList(url, item) ?? <EpisodeMedia>[];
+    final episodes =
+        podcast?.episodes
+            .where((e) => e.contentUrl != null)
+            .map(
+              (e) => EpisodeMedia(
+                e.contentUrl!,
+                episode: e,
+                feedUrl: url,
+                albumArtUrl:
+                    item?.artworkUrl600 ?? item?.artworkUrl ?? podcast.image,
+                collectionName: podcast.title,
+                artist: podcast.copyright,
+                genres: [
+                  if (item?.primaryGenreName != null) item!.primaryGenreName!,
+                ],
+              ),
+            )
+            .toList() ??
+        [];
 
     _episodeCache[url] = episodes;
     _podcastDescriptionCache[url] = podcast?.description;

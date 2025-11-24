@@ -92,6 +92,14 @@ void registerDependencies() {
       () => PodcastLibraryService(sharedPreferences: di<SharedPreferences>()),
       dependsOn: [SharedPreferences],
     )
+    ..registerSingletonWithDependencies<DownloadService>(
+      () => DownloadService(
+        libraryService: di<PodcastLibraryService>(),
+        settingsService: di<SettingsService>(),
+        dio: di<Dio>(),
+      ),
+      dependsOn: [SettingsService],
+    )
     ..registerSingletonWithDependencies<PodcastService>(
       () => PodcastService(
         libraryService: di<PodcastLibraryService>(),
@@ -107,6 +115,7 @@ void registerDependencies() {
         searchManager: di<SearchManager>(),
         collectionManager: di<CollectionManager>(),
         podcastLibraryService: di<PodcastLibraryService>(),
+        downloadService: di<DownloadService>(),
       ),
       dependsOn: [PodcastService],
     )
@@ -119,12 +128,6 @@ void registerDependencies() {
         externalPathService: di<ExternalPathService>(),
       ),
       dependsOn: [SettingsService],
-    )
-    ..registerLazySingleton<DownloadService>(
-      () => DownloadService(
-        libraryService: di<PodcastLibraryService>(),
-        dio: di<Dio>(),
-      ),
     )
     ..registerSingletonWithDependencies<RadioLibraryService>(
       () => RadioLibraryService(sharedPreferences: di<SharedPreferences>()),

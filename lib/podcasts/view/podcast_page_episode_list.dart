@@ -14,7 +14,7 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    callOnce(
+    callOnceAfterThisBuild(
       (context) => di<PodcastManager>().fetchEpisodeMediaCommand(podcastItem),
     );
 
@@ -27,7 +27,16 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
     ).toWidget(
       onData: (episodesX, param) {
         final episodes = downloadsOnly
-            ? episodesX.where((e) => e.isDownloaded).toList()
+            ? episodesX
+                  .where(
+                    (e) =>
+                        di<PodcastManager>()
+                            .getDownloadCommand(e)
+                            .progress
+                            .value ==
+                        1.0,
+                  )
+                  .toList()
             : episodesX;
         return SliverList.builder(
           itemCount: episodes.length,

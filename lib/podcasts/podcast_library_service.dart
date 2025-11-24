@@ -14,8 +14,7 @@ class PodcastLibraryService {
 
   final SharedPreferences _sharedPreferences;
 
-  // This stream is currently used for downloads
-  // TODO: replace with download commmand in DownloadManager
+  // This stream is currently used for updates and feeds with downloads
   final _propertiesChangedController = StreamController<bool>.broadcast();
   Stream<bool> get propertiesChanged => _propertiesChangedController.stream;
   Future<void> notify(bool value) async =>

@@ -30,11 +30,12 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final downloadCommand = di<PodcastManager>().getDownloadCommand(episode);
 
-    final progress = watch(episode.downloadCommand.progress).value;
+    final progress = watch(downloadCommand.progress).value;
     final isDownloaded = progress == 1.0;
 
-    final isRunning = watch(episode.downloadCommand.isRunning).value;
+    final isRunning = watch(downloadCommand.isRunning).value;
 
     return IconButton(
       isSelected: isDownloaded,
@@ -48,9 +49,10 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
       onPressed: () {
         if (isDownloaded) {
           di<DownloadService>().deleteDownload(media: episode);
-          episode.downloadCommand.resetProgress();
+          di<PodcastManager>().recentDownloads.remove(episode);
+          downloadCommand.resetProgress();
         } else if (isRunning) {
-          episode.downloadCommand.cancel();
+          downloadCommand.cancel();
         } else {
           // Add podcast to library before downloading
           di<PodcastManager>().addPodcast(
@@ -62,7 +64,7 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
               genreList: episode.genres,
             ),
           );
-          episode.downloadCommand.run();
+          downloadCommand.run();
         }
       },
       color: isDownloaded
@@ -79,13 +81,15 @@ class _DownloadProgress extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    final progress = watch(episode.downloadCommand.progress).value;
+    final progress = watch(
+      di<PodcastManager>().getDownloadCommand(episode).progress,
+    ).value;
 
     return SizedBox.square(
       dimension: (context.theme.buttonTheme.height / 2 * 2) - 3,
       child: CircularProgressIndicator(
         padding: EdgeInsets.zero,
-        value: progress > 0 && progress < 1.0 ? progress : null,
+        value: progress == 1.0 ? 0 : progress,
         backgroundColor: Colors.transparent,
       ),
     );

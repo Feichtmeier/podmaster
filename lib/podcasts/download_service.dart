@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_it/flutter_it.dart';
 import 'package:path/path.dart' as p;
 
 import '../player/data/episode_media.dart';
-import '../settings/settings_manager.dart';
+import '../settings/settings_service.dart';
 import 'podcast_library_service.dart';
 
 /// Service for downloading podcast episodes.
@@ -17,8 +16,10 @@ class DownloadService {
   DownloadService({
     required PodcastLibraryService libraryService,
     required Dio dio,
+    required SettingsService settingsService,
   }) : _libraryService = libraryService,
-       _dio = dio {
+       _dio = dio,
+       _settingsService = settingsService {
     _propertiesChangedSubscription = _libraryService.propertiesChanged.listen((
       _,
     ) {
@@ -28,12 +29,9 @@ class DownloadService {
   }
 
   final PodcastLibraryService _libraryService;
+  final SettingsService _settingsService;
   final Dio _dio;
   StreamSubscription<bool>? _propertiesChangedSubscription;
-
-  // Read-only access to library service methods
-  List<String> get feedsWithDownloads => _libraryService.feedsWithDownloads;
-  String? getDownload(String? url) => _libraryService.getDownload(url);
 
   /// Downloads an episode to the local filesystem.
   ///
@@ -49,7 +47,7 @@ class DownloadService {
       throw Exception('Invalid media, missing URL to download');
     }
 
-    final downloadsDir = di<SettingsManager>().downloadsDirCommand.value;
+    final downloadsDir = _settingsService.downloadsDir;
     if (downloadsDir == null) {
       throw Exception('Downloads directory not set');
     }

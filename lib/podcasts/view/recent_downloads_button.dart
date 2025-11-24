@@ -43,8 +43,10 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
   Widget build(BuildContext context) {
     final theme = context.theme;
     final activeDownloads = watchValue((PodcastManager m) => m.activeDownloads);
-
     final hasActiveDownloads = activeDownloads.isNotEmpty;
+
+    final recentDownloads = watchValue((PodcastManager m) => m.recentDownloads);
+    final hasRecentDownloads = recentDownloads.isNotEmpty;
 
     if (hasActiveDownloads) {
       if (!_controller.isAnimating) {
@@ -58,7 +60,7 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 300),
-      opacity: hasActiveDownloads ? 1.0 : 0.0,
+      opacity: hasActiveDownloads || hasRecentDownloads ? 1.0 : 0.0,
       child: IconButton(
         icon: hasActiveDownloads
             ? FadeTransition(
@@ -89,10 +91,14 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
                   SliverList.builder(
                     itemCount: activeDownloads.length,
                     itemBuilder: (context, index) {
-                      final episode = activeDownloads[index];
+                      final episode = activeDownloads.elementAt(index);
                       return ListTile(
                         onTap: () {
-                          if (episode.isDownloaded) {
+                          if (di<PodcastManager>()
+                                  .getDownloadCommand(episode)
+                                  .progress
+                                  .value ==
+                              1.0) {
                             di<PlayerManager>().setPlaylist([episode]);
                           }
                         },
@@ -101,6 +107,20 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
                         trailing: DownloadButton(episode: episode),
                       );
                     },
+                  ),
+                  SliverList.builder(
+                    itemBuilder: (context, index) {
+                      final episode = recentDownloads.elementAt(index);
+                      return ListTile(
+                        onTap: () {
+                          di<PlayerManager>().setPlaylist([episode]);
+                        },
+                        title: Text(episode.title ?? context.l10n.unknown),
+                        subtitle: Text(episode.artist ?? context.l10n.unknown),
+                        trailing: DownloadButton(episode: episode),
+                      );
+                    },
+                    itemCount: recentDownloads.length,
                   ),
                 ],
               ),

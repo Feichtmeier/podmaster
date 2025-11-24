@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -7,6 +8,7 @@ import '../extensions/country_x.dart';
 import '../player/data/episode_media.dart';
 import '../search/search_manager.dart';
 import 'data/podcast_metadata.dart';
+import 'download_service.dart';
 import 'podcast_library_service.dart';
 import 'podcast_service.dart';
 
@@ -18,10 +20,12 @@ import 'podcast_service.dart';
 class PodcastManager {
   PodcastManager({
     required PodcastService podcastService,
+    required DownloadService downloadService,
     required SearchManager searchManager,
     required CollectionManager collectionManager,
     required PodcastLibraryService podcastLibraryService,
   }) : _podcastService = podcastService,
+       _downloadService = downloadService,
        _podcastLibraryService = podcastLibraryService {
     Command.globalExceptionHandler = (e, s) {
       printMessageInDebugMode(e.error, s);
@@ -62,13 +66,53 @@ class PodcastManager {
 
   final PodcastService _podcastService;
   final PodcastLibraryService _podcastLibraryService;
-
-  // Track episodes currently downloading
-  final activeDownloads = ListNotifier<EpisodeMedia>();
+  final DownloadService _downloadService;
 
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
   late Command<String?, List<PodcastMetadata>> podcastsCommand;
+
+  final downloadCommands = <EpisodeMedia, Command<void, void>>{};
+  final activeDownloads = ListNotifier<EpisodeMedia>();
+  final recentDownloads = ListNotifier<EpisodeMedia>();
+
+  Command<void, void> getDownloadCommand(EpisodeMedia media) =>
+      downloadCommands.putIfAbsent(media, () => _createDownloadCommand(media));
+
+  Command<void, void> _createDownloadCommand(EpisodeMedia media) {
+    final command = Command.createAsyncNoParamNoResultWithProgress((
+      handle,
+    ) async {
+      activeDownloads.add(media);
+
+      final cancelToken = CancelToken();
+
+      handle.isCanceled.listen((canceled, subscription) {
+        if (canceled) {
+          activeDownloads.remove(media);
+          cancelToken.cancel();
+          subscription.cancel();
+        }
+      });
+
+      await _downloadService.download(
+        episode: media,
+        cancelToken: cancelToken,
+        onProgress: (received, total) {
+          handle.updateProgress(received / total);
+        },
+      );
+
+      activeDownloads.remove(media);
+      recentDownloads.add(media);
+    }, errorFilter: const LocalAndGlobalErrorFilter());
+
+    if (_podcastLibraryService.getDownload(media.url) != null) {
+      command.resetProgress(progress: 1.0);
+    }
+
+    return command;
+  }
 
   Future<void> addPodcast(PodcastMetadata metadata) async {
     await _podcastLibraryService.addPodcast(metadata);
