@@ -76,14 +76,14 @@ class PodcastService {
     }
   }
 
-  // Stateless operation - just fetches episodes and description, no caching
-  Future<({List<EpisodeMedia> episodes, String? description})> findEpisodes({
+  // Stateless operation - just fetches podcast and episodes, no caching
+  Future<({Podcast? podcast, List<EpisodeMedia> episodes})> findEpisodes({
     Item? item,
     String? feedUrl,
   }) async {
     if (item == null && item?.feedUrl == null && feedUrl == null) {
       printMessageInDebugMode('findEpisodes called without feedUrl or item');
-      return (episodes: <EpisodeMedia>[], description: null);
+      return (podcast: null, episodes: <EpisodeMedia>[]);
     }
 
     final url = feedUrl ?? item!.feedUrl!;
@@ -96,7 +96,14 @@ class PodcastService {
       );
     }
 
-    final Podcast? podcast = await compute(loadPodcast, url);
+    Podcast? podcast;
+    try {
+      podcast = await compute(loadPodcast, url);
+    } catch (e) {
+      printMessageInDebugMode('Error loading podcast feed: $e');
+      return (podcast: null, episodes: <EpisodeMedia>[]);
+    }
+
     if (podcast?.image != null) {
       _libraryService.addSubscribedPodcastImage(
         feedUrl: url,
@@ -106,7 +113,7 @@ class PodcastService {
 
     final episodes = podcast?.toEpisodeMediaList(url, item) ?? <EpisodeMedia>[];
 
-    return (episodes: episodes, description: podcast?.description);
+    return (podcast: podcast, episodes: episodes);
   }
 }
 

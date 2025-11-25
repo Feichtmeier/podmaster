@@ -14,17 +14,15 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    callOnceAfterThisBuild(
-      (context) => di<PodcastManager>().fetchEpisodeMediaCommand(podcastItem),
-    );
+    final proxy = di<PodcastManager>().getOrCreateProxy(podcastItem);
+
+    callOnceAfterThisBuild((_) => proxy.fetchEpisodesCommand.run());
 
     final downloadsOnly = watchValue(
       (CollectionManager m) => m.showOnlyDownloadsNotifier,
     );
 
-    return watchValue(
-      (PodcastManager m) => m.fetchEpisodeMediaCommand.results,
-    ).toWidget(
+    return watch(proxy.fetchEpisodesCommand.results).value.toWidget(
       onData: (episodesX, param) {
         final episodes = downloadsOnly
             ? episodesX.where((e) => e.isDownloaded).toList()

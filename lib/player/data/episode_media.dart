@@ -10,7 +10,7 @@ import '../../podcasts/podcast_manager.dart';
 import 'unique_media.dart';
 
 class EpisodeMedia extends UniqueMedia {
-  // Factory constructor that computes download path only once
+  // Factory constructor that checks for persisted downloads
   factory EpisodeMedia(
     String resource, {
     Map<String, dynamic>? extras,
@@ -25,14 +25,12 @@ class EpisodeMedia extends UniqueMedia {
     String? collectionName,
     String? artist,
   }) {
-    // Call getDownload only once
+    // Check if episode was previously downloaded (persisted in SharedPreferences)
     final downloadPath = di<DownloadService>().getDownload(episode.contentUrl);
-    final wasDownloaded = downloadPath != null;
-    final effectiveResource = downloadPath ?? resource;
 
     return EpisodeMedia._(
-      effectiveResource,
-      wasDownloaded: wasDownloaded,
+      resource, // Always use original URL as resource
+      downloadPath: downloadPath,
       extras: extras,
       httpHeaders: httpHeaders,
       start: start,
@@ -50,7 +48,7 @@ class EpisodeMedia extends UniqueMedia {
   // Private constructor that receives pre-computed values
   EpisodeMedia._(
     super.resource, {
-    required bool wasDownloaded,
+    String? downloadPath,
     super.extras,
     super.httpHeaders,
     super.start,
@@ -68,9 +66,12 @@ class EpisodeMedia extends UniqueMedia {
        _genres = genres,
        _collectionName = collectionName,
        _artist = artist,
-       _wasDownloadedOnCreation = wasDownloaded;
+       _downloadPath = downloadPath;
 
-  final bool _wasDownloadedOnCreation;
+  /// Path to downloaded file, or null if not downloaded.
+  /// Updated by downloadCommand (on success) and deleteDownloadCommand (clears it).
+  String? _downloadPath;
+  String? get downloadPath => _downloadPath;
   final Episode episode;
   final String _feedUrl;
   final int? _bitRate;
@@ -165,8 +166,8 @@ class EpisodeMedia extends UniqueMedia {
         .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '');
   }
 
-  /// Returns true if this episode has been downloaded (progress is 100%)
-  bool get isDownloaded => downloadCommand.progress.value == 1.0;
+  /// Returns true if this episode has been downloaded
+  bool get isDownloaded => _downloadPath != null;
 
   // Download command with progress and cancellation support
   late final downloadCommand = (() {
@@ -187,7 +188,7 @@ class EpisodeMedia extends UniqueMedia {
             });
 
             // 4. Download with progress updates
-            await di<DownloadService>().download(
+            final path = await di<DownloadService>().download(
               episode: this,
               cancelToken: cancelToken,
               onProgress: (received, total) {
@@ -195,33 +196,39 @@ class EpisodeMedia extends UniqueMedia {
               },
             );
 
-            // 5. Success: keep in active downloads so user can see completed downloads
+            // 5. Set download path on success
+            _downloadPath = path;
+
+            // 6. Keep in active downloads so user can see completed downloads
             // (will be removed when user deletes or starts new session)
           }, errorFilter: const LocalAndGlobalErrorFilter())
           ..errors.listen((error, subscription) {
-            // 6. Error handler: remove from active downloads
+            // Error handler: remove from active downloads
             di<PodcastManager>().unregisterActiveDownload(this);
           });
 
     // Initialize progress to 1.0 if already downloaded
-    if (_wasDownloadedOnCreation) {
+    if (_downloadPath != null) {
       command.resetProgress(progress: 1.0);
     }
 
     return command;
   })();
 
-  // Delete download command with optimistic update
+  // Delete download command with optimistic update for progress UI
   late final deleteDownloadCommand =
       Command.createAsyncNoParamNoResult(() async {
           // Optimistic: reset progress immediately for instant UI feedback
           downloadCommand.resetProgress(progress: 0.0);
 
-          // Then delete async
+          // Delete async
           await di<DownloadService>().deleteDownload(media: this);
+
+          // Clear downloadPath only after successful delete
+          _downloadPath = null;
         }, errorFilter: const LocalAndGlobalErrorFilter())
         ..errors.listen((error, _) {
-          // Simple rollback: restore progress on error
+          // Rollback progress on error
           if (error != null) {
             downloadCommand.resetProgress(progress: 1.0);
           }

@@ -10,6 +10,7 @@ import '../notifications/notifications_service.dart';
 import '../player/data/episode_media.dart';
 import '../search/search_manager.dart';
 import 'data/podcast_metadata.dart';
+import 'data/podcast_proxy.dart';
 import 'podcast_library_service.dart';
 import 'podcast_service.dart';
 
@@ -55,89 +56,26 @@ class PodcastManager {
       (filterText, sub) => getSubscribedPodcastsCommand.run(filterText),
     );
 
-    fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>((
-      podcast,
-    ) async {
-      final feedUrl = podcast.feedUrl;
-      if (feedUrl == null) return [];
-
-      // Check cache first - returns same instances so downloadCommands work
-      if (_episodeCache.containsKey(feedUrl)) {
-        return _episodeCache[feedUrl]!;
-      }
-
-      // Fetch from service (no longer caches internally)
-      final result = await _podcastService.findEpisodes(item: podcast);
-
-      // Cache both episodes and description
-      _episodeCache[feedUrl] = result.episodes;
-      _podcastDescriptionCache[feedUrl] = result.description;
-
-      return result.episodes;
-    }, initialValue: []);
-
     checkForUpdatesCommand =
         Command.createAsync<
-          ({
-            Set<String>? feedUrls,
-            String updateMessage,
-            String Function(int) multiUpdateMessage,
-          }),
+          ({String updateMessage, String Function(int) multiUpdateMessage}),
           void
         >((params) async {
-          final newUpdateFeedUrls = <String>{};
+          final updatedProxies = <PodcastProxy>[];
 
-          for (final feedUrl
-              in (params.feedUrls ?? _podcastLibraryService.podcasts)) {
-            final storedTimeStamp = _podcastLibraryService
-                .getPodcastLastUpdated(feedUrl);
-            DateTime? feedLastUpdated;
-            try {
-              feedLastUpdated = await Feed.feedLastUpdated(url: feedUrl);
-            } on Exception catch (e) {
-              printMessageInDebugMode(e);
-            }
-            final name = _podcastLibraryService.getSubscribedPodcastName(
-              feedUrl,
-            );
-
-            printMessageInDebugMode('checking update for: ${name ?? feedUrl} ');
-            printMessageInDebugMode(
-              'storedTimeStamp: ${storedTimeStamp ?? 'no timestamp'}',
-            );
-            printMessageInDebugMode(
-              'feedLastUpdated: ${feedLastUpdated?.podcastTimeStamp ?? 'no timestamp'}',
-            );
-
-            if (feedLastUpdated == null) continue;
-
-            await _podcastLibraryService.addPodcastLastUpdated(
-              feedUrl: feedUrl,
-              timestamp: feedLastUpdated.podcastTimeStamp,
-            );
-
-            if (storedTimeStamp != null &&
-                !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
-              // Fetch episodes to refresh cache
-              await fetchEpisodeMediaCommand.runAsync(Item(feedUrl: feedUrl));
-
-              await _podcastLibraryService.addPodcastUpdate(
-                feedUrl,
-                feedLastUpdated,
-              );
-              newUpdateFeedUrls.add(feedUrl);
+          // Check all subscribed podcasts for updates
+          for (final feedUrl in _podcastLibraryService.podcasts) {
+            final proxy = getOrCreateProxy(Item(feedUrl: feedUrl));
+            final hasUpdate = await _checkForUpdate(proxy);
+            if (hasUpdate) {
+              updatedProxies.add(proxy);
             }
           }
 
-          if (newUpdateFeedUrls.isNotEmpty) {
-            final podcastName = newUpdateFeedUrls.length == 1
-                ? _podcastLibraryService.getSubscribedPodcastName(
-                    newUpdateFeedUrls.first,
-                  )
-                : null;
-            final msg = newUpdateFeedUrls.length == 1
-                ? '${params.updateMessage}${podcastName != null ? ' $podcastName' : ''}'
-                : params.multiUpdateMessage(newUpdateFeedUrls.length);
+          if (updatedProxies.isNotEmpty) {
+            final msg = updatedProxies.length == 1
+                ? '${params.updateMessage} ${updatedProxies.first.title ?? ''}'
+                : params.multiUpdateMessage(updatedProxies.length);
             await _notificationsService.notify(message: msg);
           }
         }, initialValue: null);
@@ -221,19 +159,63 @@ class PodcastManager {
     activeDownloads.remove(episode);
   }
 
-  // Episode cache - ensures same instances across app for command state
-  final _episodeCache = <String, List<EpisodeMedia>>{};
-  final _podcastDescriptionCache = <String, String?>{};
+  // Proxy cache - each podcast owns its fetchEpisodesCommand
+  final _proxyCache = <String, PodcastProxy>{};
+
+  /// Gets or creates a PodcastProxy for the given Item.
+  /// The proxy owns the fetchEpisodesCommand.
+  PodcastProxy getOrCreateProxy(Item item) {
+    return _proxyCache.putIfAbsent(
+      item.feedUrl!,
+      () => PodcastProxy(item: item, podcastService: _podcastService),
+    );
+  }
+
+  /// Checks a single podcast for updates. Returns true if updated.
+  Future<bool> _checkForUpdate(PodcastProxy proxy) async {
+    final feedUrl = proxy.feedUrl;
+    final storedTimeStamp = _podcastLibraryService.getPodcastLastUpdated(
+      feedUrl,
+    );
+    DateTime? feedLastUpdated;
+
+    try {
+      feedLastUpdated = await Feed.feedLastUpdated(url: feedUrl);
+    } on Exception catch (e) {
+      printMessageInDebugMode(e);
+    }
+
+    printMessageInDebugMode('checking update for: ${proxy.title ?? feedUrl}');
+    printMessageInDebugMode(
+      'storedTimeStamp: ${storedTimeStamp ?? 'no timestamp'}',
+    );
+    printMessageInDebugMode(
+      'feedLastUpdated: ${feedLastUpdated?.podcastTimeStamp ?? 'no timestamp'}',
+    );
+
+    if (feedLastUpdated == null) return false;
+
+    await _podcastLibraryService.addPodcastLastUpdated(
+      feedUrl: feedUrl,
+      timestamp: feedLastUpdated.podcastTimeStamp,
+    );
+
+    if (storedTimeStamp != null &&
+        !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
+      // Clear cached episodes to force refresh
+      proxy.clearEpisodeCache();
+      await proxy.fetchEpisodesCommand.runAsync();
+
+      await _podcastLibraryService.addPodcastUpdate(feedUrl, feedLastUpdated);
+      return true; // Has update
+    }
+    return false;
+  }
 
   late Command<String?, SearchResult> updateSearchCommand;
-  late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
   late Command<String?, List<PodcastMetadata>> getSubscribedPodcastsCommand;
   late Command<
-    ({
-      Set<String>? feedUrls,
-      String updateMessage,
-      String Function(int) multiUpdateMessage,
-    }),
+    ({String updateMessage, String Function(int) multiUpdateMessage}),
     void
   >
   checkForUpdatesCommand;
@@ -250,5 +232,5 @@ class PodcastManager {
   }
 
   String? getPodcastDescription(String? feedUrl) =>
-      _podcastDescriptionCache[feedUrl];
+      _proxyCache[feedUrl]?.description;
 }

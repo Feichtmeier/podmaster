@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
 
-import '../../player/player_manager.dart';
 import '../podcast_manager.dart';
 
 class PodcastCardPlayButton extends StatelessWidget with WatchItMixin {
@@ -12,11 +11,13 @@ class PodcastCardPlayButton extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    // Handler only exists while this button is mounted - won't fire when
-    // PodcastPageEpisodeList fetches episodes (different widget tree)
+    final proxy = di<PodcastManager>().getOrCreateProxy(podcastItem);
+
     registerHandler(
-      select: (PodcastManager m) => m.fetchEpisodeMediaCommand.results,
-      handler: (context, result, cancel) {
+      target: proxy.playEpisodesCommand.results,
+      handler: (context, CommandResult<int, void>? result, cancel) {
+        if (result == null) return;
+
         if (result.isRunning) {
           showDialog(
             context: context,
@@ -25,9 +26,6 @@ class PodcastCardPlayButton extends StatelessWidget with WatchItMixin {
           );
         } else if (result.isSuccess) {
           Navigator.of(context).pop();
-          if (result.data != null && result.data!.isNotEmpty) {
-            di<PlayerManager>().setPlaylist(result.data!, index: 0);
-          }
         } else if (result.hasError) {
           Navigator.of(context).pop();
         }
@@ -36,8 +34,7 @@ class PodcastCardPlayButton extends StatelessWidget with WatchItMixin {
 
     return FloatingActionButton.small(
       heroTag: 'podcastcardfap',
-      onPressed: () =>
-          di<PodcastManager>().fetchEpisodeMediaCommand.run(podcastItem),
+      onPressed: () => proxy.playEpisodesCommand(0),
       child: const Icon(Icons.play_arrow),
     );
   }

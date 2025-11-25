@@ -78,12 +78,18 @@ class _DownloadProgress extends StatelessWidget with WatchItMixin {
   @override
   Widget build(BuildContext context) {
     final progress = watch(episode.downloadCommand.progress).value;
+    final isRunning = watch(episode.downloadCommand.isRunning).value;
+
+    // Show indeterminate spinner when running but no progress yet
+    // Show determinate progress when we have progress data
+    // Hide when completed (progress == 1.0) or not running
+    final showSpinner = isRunning || (progress > 0 && progress < 1.0);
 
     return SizedBox.square(
       dimension: (context.theme.buttonTheme.height / 2 * 2) - 3,
       child: CircularProgressIndicator(
         padding: EdgeInsets.zero,
-        value: progress == 1.0 ? 0 : progress,
+        value: showSpinner ? (progress > 0 ? progress : null) : 0,
         backgroundColor: Colors.transparent,
       ),
     );

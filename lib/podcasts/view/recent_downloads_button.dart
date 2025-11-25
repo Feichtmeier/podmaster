@@ -42,7 +42,7 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
-    final activeDownloads = watchValue((PodcastManager m) => m.activeDownloads);
+    final activeDownloads = watch(di<PodcastManager>().activeDownloads).value;
 
     final hasAnyDownloads = activeDownloads.isNotEmpty;
     final hasInProgressDownloads = activeDownloads.any((e) => !e.isDownloaded);
