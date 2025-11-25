@@ -209,6 +209,18 @@ class PodcastManager {
   // Track episodes currently downloading
   final activeDownloads = ListNotifier<EpisodeMedia>();
 
+  /// Registers an episode as actively downloading.
+  /// Called by EpisodeMedia.downloadCommand when download starts.
+  void registerActiveDownload(EpisodeMedia episode) {
+    activeDownloads.add(episode);
+  }
+
+  /// Unregisters an episode from active downloads.
+  /// Called by EpisodeMedia.downloadCommand on error.
+  void unregisterActiveDownload(EpisodeMedia episode) {
+    activeDownloads.remove(episode);
+  }
+
   // Episode cache - ensures same instances across app for command state
   final _episodeCache = <String, List<EpisodeMedia>>{};
   final _podcastDescriptionCache = <String, String?>{};

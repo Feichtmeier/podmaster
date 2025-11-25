@@ -173,7 +173,7 @@ class EpisodeMedia extends UniqueMedia {
     final command =
         Command.createAsyncNoParamNoResultWithProgress((handle) async {
             // 1. Add to active downloads
-            di<PodcastManager>().activeDownloads.add(this);
+            di<PodcastManager>().registerActiveDownload(this);
 
             // 2. Create CancelToken
             final cancelToken = CancelToken();
@@ -200,7 +200,7 @@ class EpisodeMedia extends UniqueMedia {
           }, errorFilter: const LocalAndGlobalErrorFilter())
           ..errors.listen((error, subscription) {
             // 6. Error handler: remove from active downloads
-            di<PodcastManager>().activeDownloads.remove(this);
+            di<PodcastManager>().unregisterActiveDownload(this);
           });
 
     // Initialize progress to 1.0 if already downloaded
