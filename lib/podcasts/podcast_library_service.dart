@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../extensions/date_time_x.dart';
 import '../extensions/shared_preferences_x.dart';
-import 'data/podcast_metadata.dart';
 
 class PodcastLibraryService {
   PodcastLibraryService({required SharedPreferences sharedPreferences})
@@ -16,7 +15,7 @@ class PodcastLibraryService {
 
   final SharedPreferences _sharedPreferences;
 
-  // This stream is currently used for updates and feeds with downloads
+  // This stream is currently used for downloads
   final _propertiesChangedController = StreamController<bool>.broadcast();
   Stream<bool> get propertiesChanged => _propertiesChangedController.stream;
   Future<void> notify(bool value) async =>
@@ -41,7 +40,7 @@ class PodcastLibraryService {
     }).toSet();
   }
 
-  List<Item> getFilteredPodcastItems(String? filterText) {
+  List<Item> getFilteredPodcastsItems(String? filterText) {
     final filteredFeedUrls = _getFilteredPodcasts(filterText);
     final result = <Item>[];
     for (final feedUrl in filteredFeedUrls) {
@@ -51,7 +50,8 @@ class PodcastLibraryService {
     return result;
   }
 
-  bool isPodcastSubscribed(String feedUrl) => _podcasts.contains(feedUrl);
+  bool isPodcastSubscribed(String? feedUrl) =>
+      feedUrl != null && _podcasts.contains(feedUrl);
   List<String> get podcastFeedUrls => _podcasts.toList();
   Set<String> get podcasts => _podcasts;
   int get podcastsLength => _podcasts.length;
@@ -59,22 +59,22 @@ class PodcastLibraryService {
   // Adding and removing Podcasts
   // ------------------
 
-  Future<void> addPodcast(PodcastMetadata metadata) async {
-    if (isPodcastSubscribed(metadata.feedUrl)) return;
-    await _addPodcastMetadata(metadata);
+  Future<void> addPodcast(Item item) async {
+    if (isPodcastSubscribed(item.feedUrl)) return;
+    await _addPodcastMetadata(item);
     await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, [
       ...List<String>.from(_podcasts),
-      metadata.feedUrl,
+      item.feedUrl!,
     ]);
   }
 
-  Future<void> addPodcasts(List<PodcastMetadata> metadata) async {
+  Future<void> addPodcasts(List<Item> metadata) async {
     if (metadata.isEmpty) return;
     final newList = List<String>.from(_podcasts);
     for (var p in metadata) {
-      if (!newList.contains(p.feedUrl)) {
+      if (p.feedUrl != null && !newList.contains(p.feedUrl)) {
         await _addPodcastMetadata(p);
-        newList.add(p.feedUrl);
+        newList.add(p.feedUrl!);
       }
     }
     await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, newList);
@@ -96,30 +96,36 @@ class PodcastLibraryService {
 
   // Podcast Metadata
   // ------------------
-  Future<void> _addPodcastMetadata(PodcastMetadata metadata) async {
-    if (metadata.imageUrl != null) {
+  Future<void> _addPodcastMetadata(Item item) async {
+    if (item.feedUrl == null) {
+      return;
+    }
+    if (item.bestArtworkUrl != null) {
       addSubscribedPodcastImage(
-        feedUrl: metadata.feedUrl,
-        imageUrl: metadata.imageUrl!,
+        feedUrl: item.feedUrl!,
+        imageUrl: item.bestArtworkUrl!,
       );
     }
-    if (metadata.name != null) {
-      addSubscribedPodcastName(feedUrl: metadata.feedUrl, name: metadata.name!);
+    if (item.collectionName != null) {
+      addSubscribedPodcastName(
+        feedUrl: item.feedUrl!,
+        name: item.collectionName!,
+      );
     }
-    if (metadata.artist != null) {
+    if (item.artistName != null) {
       addSubscribedPodcastArtist(
-        feedUrl: metadata.feedUrl,
-        artist: metadata.artist!,
+        feedUrl: item.feedUrl!,
+        artist: item.artistName!,
       );
     }
-    if (metadata.genreList != null) {
+    if (item.genre != null) {
       addSubscribedPodcastGenreList(
-        feedUrl: metadata.feedUrl,
-        genreList: metadata.genreList!,
+        feedUrl: item.feedUrl!,
+        genreList: item.genre!.map((g) => g.name).toList(),
       );
     }
     await addPodcastLastUpdated(
-      feedUrl: metadata.feedUrl,
+      feedUrl: item.feedUrl!,
       timestamp: DateTime.now().podcastTimeStamp,
     );
   }
@@ -129,11 +135,9 @@ class PodcastLibraryService {
     artworkUrl: getSubscribedPodcastImage(feedUrl),
     collectionName: getSubscribedPodcastName(feedUrl),
     artistName: getSubscribedPodcastArtist(feedUrl),
-    genre:
-        getSubScribedPodcastGenreList(
-          feedUrl,
-        )?.mapIndexed((i, e) => Genre(i, e)).toList() ??
-        <Genre>[],
+    genre: getSubScribedPodcastGenreList(
+      feedUrl,
+    )?.mapIndexed((i, g) => Genre(i, g)).toList(),
   );
 
   // Image URL

@@ -11,7 +11,6 @@ import '../extensions/string_x.dart';
 import '../notifications/notifications_service.dart';
 import '../player/data/episode_media.dart';
 import '../search/search_manager.dart';
-import 'data/podcast_metadata.dart';
 import 'download_service.dart';
 import 'podcast_library_service.dart';
 import 'podcast_service.dart';
@@ -51,7 +50,8 @@ class PodcastManager {
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
     getSubscribedPodcastsCommand = Command.createSync(
-      (filterText) => podcastLibraryService.getFilteredPodcastItems(filterText),
+      (filterText) =>
+          podcastLibraryService.getFilteredPodcastsItems(filterText),
       initialValue: [],
     );
 
@@ -136,8 +136,8 @@ class PodcastManager {
     return command;
   }
 
-  Future<void> addPodcast(PodcastMetadata metadata) async {
-    await _podcastLibraryService.addPodcast(metadata);
+  Future<void> addPodcast(Item item) async {
+    await _podcastLibraryService.addPodcast(item);
     getSubscribedPodcastsCommand.run();
   }
 
@@ -147,6 +147,7 @@ class PodcastManager {
   }
 
   final Map<String, Podcast> _podcastCache = {};
+  Podcast? getPodcastFromCache(String? feedUrl) => _podcastCache[feedUrl];
   String? getPodcastDescriptionFromCache(String? feedUrl) =>
       _podcastCache[feedUrl]?.description;
 

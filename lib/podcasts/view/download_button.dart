@@ -1,9 +1,10 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
+import 'package:podcast_search/podcast_search.dart';
 
 import '../../extensions/build_context_x.dart';
 import '../../player/data/episode_media.dart';
-import '../data/podcast_metadata.dart';
 import '../download_service.dart';
 import '../podcast_manager.dart';
 
@@ -56,12 +57,14 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
         } else {
           // Add podcast to library before downloading
           di<PodcastManager>().addPodcast(
-            PodcastMetadata(
+            Item(
               feedUrl: episode.feedUrl,
-              imageUrl: episode.albumArtUrl,
-              name: episode.collectionName,
-              artist: episode.artist,
-              genreList: episode.genres,
+              artworkUrl: episode.albumArtUrl,
+              collectionName: episode.collectionName,
+              artistName: episode.artist,
+              genre: episode.genres
+                  .mapIndexed((index, genre) => Genre(index, genre))
+                  .toList(),
             ),
           );
           downloadCommand.run();
