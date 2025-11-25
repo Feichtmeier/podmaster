@@ -44,9 +44,10 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
     final theme = context.theme;
     final activeDownloads = watchValue((PodcastManager m) => m.activeDownloads);
 
-    final hasActiveDownloads = activeDownloads.isNotEmpty;
+    final hasAnyDownloads = activeDownloads.isNotEmpty;
+    final hasInProgressDownloads = activeDownloads.any((e) => !e.isDownloaded);
 
-    if (hasActiveDownloads) {
+    if (hasInProgressDownloads) {
       if (!_controller.isAnimating) {
         _controller.repeat(reverse: true);
       }
@@ -58,9 +59,9 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
 
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 300),
-      opacity: hasActiveDownloads ? 1.0 : 0.0,
+      opacity: hasAnyDownloads ? 1.0 : 0.0,
       child: IconButton(
-        icon: hasActiveDownloads
+        icon: hasInProgressDownloads
             ? FadeTransition(
                 opacity: _animation,
                 child: Icon(
@@ -70,7 +71,9 @@ class _RecentDownloadsButtonState extends State<RecentDownloadsButton>
               )
             : Icon(
                 Icons.download_for_offline,
-                color: theme.colorScheme.onSurface,
+                color: hasAnyDownloads
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface,
               ),
         onPressed: () => showDialog(
           context: context,

@@ -195,8 +195,8 @@ class EpisodeMedia extends UniqueMedia {
               },
             );
 
-            // 5. Success: remove from active downloads
-            di<PodcastManager>().activeDownloads.remove(this);
+            // 5. Success: keep in active downloads so user can see completed downloads
+            // (will be removed when user deletes or starts new session)
           }, errorFilter: const LocalAndGlobalErrorFilter())
           ..errors.listen((error, subscription) {
             // 6. Error handler: remove from active downloads
