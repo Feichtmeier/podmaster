@@ -60,14 +60,31 @@ class PodcastManager {
       (filterText, sub) => podcastsCommand.run(filterText),
     );
 
-    fetchEpisodeMediaCommand = Command.createAsync<Item, List<EpisodeMedia>>(
-      (podcast) => findEpisodes(item: podcast),
-      initialValue: [],
-    );
-
     podcastsCommand.run(null);
 
     updateSearchCommand.run(null);
+  }
+
+  // Map of feedUrl to fetch episodes command
+  final fetchEpisodeMediaCommands =
+      <String, Command<Item, List<EpisodeMedia>>>{};
+
+  Command<Item, List<EpisodeMedia>> _getFetchEpisodesCommand(Item item) {
+    if (item.feedUrl == null) {
+      throw ArgumentError('Item must have a feedUrl to fetch episodes');
+    }
+    return fetchEpisodeMediaCommands.putIfAbsent(
+      item.feedUrl!,
+      () => Command.createAsync<Item, List<EpisodeMedia>>(
+        (item) async => findEpisodes(item: item),
+        initialValue: [],
+      ),
+    );
+  }
+
+  Command<Item, List<EpisodeMedia>> runFetchEpisodesCommand(Item item) {
+    _getFetchEpisodesCommand(item).run(item);
+    return _getFetchEpisodesCommand(item);
   }
 
   final PodcastService _podcastService;
@@ -76,7 +93,6 @@ class PodcastManager {
   final NotificationsService _notificationsService;
 
   late Command<String?, SearchResult> updateSearchCommand;
-  late Command<Item, List<EpisodeMedia>> fetchEpisodeMediaCommand;
   late Command<String?, List<PodcastMetadata>> podcastsCommand;
 
   final downloadCommands = <EpisodeMedia, Command<void, void>>{};
