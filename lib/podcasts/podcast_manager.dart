@@ -47,8 +47,7 @@ class PodcastManager {
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
     getSubscribedPodcastsCommand = Command.createSync(
-      (filterText) =>
-          podcastLibraryService.getFilteredPodcastsWithMetadata(filterText),
+      (filterText) => podcastLibraryService.getFilteredPodcastItems(filterText),
       initialValue: [],
     );
 
@@ -81,10 +80,7 @@ class PodcastManager {
         }, initialValue: null);
 
     togglePodcastSubscriptionCommand =
-        Command.createUndoableNoResult<
-          Item,
-          ({bool wasAdd, PodcastMetadata metadata})
-        >(
+        Command.createUndoableNoResult<Item, ({bool wasAdd, Item item})>(
           (item, stack) async {
             final feedUrl = item.feedUrl;
             if (feedUrl == null) return;
@@ -92,14 +88,8 @@ class PodcastManager {
             final currentList = getSubscribedPodcastsCommand.value;
             final isSubscribed = currentList.any((p) => p.feedUrl == feedUrl);
 
-            final metadata = PodcastMetadata(
-              feedUrl: feedUrl,
-              name: item.collectionName,
-              imageUrl: item.bestArtworkUrl,
-            );
-
             // Store operation info for undo
-            stack.push((wasAdd: !isSubscribed, metadata: metadata));
+            stack.push((wasAdd: !isSubscribed, item: item));
 
             // Optimistic update: modify list directly
             if (isSubscribed) {
@@ -107,13 +97,15 @@ class PodcastManager {
                   .where((p) => p.feedUrl != feedUrl)
                   .toList();
             } else {
-              getSubscribedPodcastsCommand.value = [...currentList, metadata];
+              getSubscribedPodcastsCommand.value = [...currentList, item];
             }
 
             // Async persist
             await (isSubscribed
                 ? _podcastLibraryService.removePodcast(feedUrl)
-                : _podcastLibraryService.addPodcast(metadata));
+                : _podcastLibraryService.addPodcast(
+                    PodcastMetadata.fromItem(item),
+                  ));
           },
           undo: (stack, reason) async {
             final undoData = stack.pop();
@@ -122,13 +114,13 @@ class PodcastManager {
             if (undoData.wasAdd) {
               // Was an add, so remove it
               getSubscribedPodcastsCommand.value = currentList
-                  .where((p) => p.feedUrl != undoData.metadata.feedUrl)
+                  .where((p) => p.feedUrl != undoData.item.feedUrl)
                   .toList();
             } else {
               // Was a remove, so add it back
               getSubscribedPodcastsCommand.value = [
                 ...currentList,
-                undoData.metadata,
+                undoData.item,
               ];
             }
           },
@@ -213,7 +205,7 @@ class PodcastManager {
   }
 
   late Command<String?, SearchResult> updateSearchCommand;
-  late Command<String?, List<PodcastMetadata>> getSubscribedPodcastsCommand;
+  late Command<String?, List<Item>> getSubscribedPodcastsCommand;
   late Command<
     ({String updateMessage, String Function(int) multiUpdateMessage}),
     void
