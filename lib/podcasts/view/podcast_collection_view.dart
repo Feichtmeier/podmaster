@@ -1,11 +1,9 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
-import 'package:podcast_search/podcast_search.dart';
 
 import '../../collection/collection_manager.dart';
 import '../../common/view/ui_constants.dart';
-import '../download_service.dart';
+import '../podcast_library_service.dart';
 import '../podcast_manager.dart';
 import 'podcast_card.dart';
 
@@ -14,9 +12,16 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    final feedsWithDownloads = watchPropertyValue(
-      (DownloadService m) => m.feedsWithDownloads,
-    );
+    final feedsWithDownloads =
+        watchStream(
+          (PodcastLibraryService m) =>
+              m.propertiesChanged.map((_) => m.feedsWithDownloads),
+          initialValue: di<PodcastLibraryService>().feedsWithDownloads,
+          allowStreamChange: true,
+          preserveState: false,
+        ).data ??
+        <String>{};
+
     final showOnlyDownloads = watchValue(
       (CollectionManager m) => m.showOnlyDownloadsNotifier,
     );
@@ -34,20 +39,7 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
           itemCount: podcasts.length,
           itemBuilder: (context, index) {
             final item = podcasts.elementAt(index);
-            return PodcastCard(
-              key: ValueKey(item),
-              podcastItem: Item(
-                feedUrl: item.feedUrl,
-                artistName: item.artist,
-                collectionName: item.name,
-                artworkUrl: item.imageUrl,
-                genre:
-                    item.genreList
-                        ?.mapIndexed((i, e) => Genre(i, e))
-                        .toList() ??
-                    <Genre>[],
-              ),
-            );
+            return PodcastCard(key: ValueKey(item), podcastItem: item);
           },
         );
       },

@@ -7,6 +7,7 @@ import '../../common/view/safe_network_image.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
+import '../podcast_manager.dart';
 import 'podcast_card_play_button.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
@@ -25,6 +26,28 @@ class _PodcastCardState extends State<PodcastCard> {
 
   @override
   Widget build(BuildContext context) {
+    final proxy = createOnce(
+      () => di<PodcastManager>().getOrCreateProxy(widget.podcastItem),
+    );
+
+    registerHandler(
+      target: proxy.playEpisodesCommand.results,
+      handler: (context, CommandResult<int, void>? result, cancel) {
+        if (result == null) return;
+
+        if (result.isRunning) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(child: CircularProgressIndicator()),
+          );
+        } else if (result.isSuccess) {
+          Navigator.of(context).pop();
+        } else if (result.hasError) {
+          Navigator.of(context).pop();
+        }
+      },
+    );
     final theme = context.theme;
     final isLight = theme.colorScheme.isLight;
     const borderRadiusGeometry = BorderRadiusGeometry.only(
