@@ -50,16 +50,16 @@ class PodcastManager {
         .debounce(const Duration(milliseconds: 500))
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
-    podcastCollectionCommand = Command.createSync(
+    getSubscribedPodcastsCommand = Command.createSync(
       (filterText) => podcastLibraryService.getFilteredPodcastItems(filterText),
       initialValue: [],
     );
 
     collectionManager.textChangedCommand.listen(
-      (filterText, sub) => podcastCollectionCommand.run(filterText),
+      (filterText, sub) => getSubscribedPodcastsCommand.run(filterText),
     );
 
-    podcastCollectionCommand.run(null);
+    getSubscribedPodcastsCommand.run(null);
 
     updateSearchCommand.run(null);
   }
@@ -92,7 +92,7 @@ class PodcastManager {
   }
 
   late Command<String?, SearchResult> updateSearchCommand;
-  late Command<String?, List<Item>> podcastCollectionCommand;
+  late Command<String?, List<Item>> getSubscribedPodcastsCommand;
 
   final _downloadCommands = <EpisodeMedia, Command<void, void>>{};
   final activeDownloads = ListNotifier<EpisodeMedia>();
@@ -138,12 +138,12 @@ class PodcastManager {
 
   Future<void> addPodcast(PodcastMetadata metadata) async {
     await _podcastLibraryService.addPodcast(metadata);
-    podcastCollectionCommand.run();
+    getSubscribedPodcastsCommand.run();
   }
 
   Future<void> removePodcast({required String feedUrl}) async {
     await _podcastLibraryService.removePodcast(feedUrl);
-    podcastCollectionCommand.run();
+    getSubscribedPodcastsCommand.run();
   }
 
   final Map<String, Podcast> _podcastCache = {};

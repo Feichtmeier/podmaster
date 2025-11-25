@@ -27,7 +27,7 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
     );
 
     return watchValue(
-      (PodcastManager m) => m.podcastCollectionCommand.results,
+      (PodcastManager m) => m.getSubscribedPodcastsCommand.results,
     ).toWidget(
       onData: (pees, _) {
         final podcasts = showOnlyDownloads
