@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
+import 'package:podcast_search/podcast_search.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../extensions/date_time_x.dart';
@@ -39,11 +41,11 @@ class PodcastLibraryService {
     }).toSet();
   }
 
-  List<PodcastMetadata> getFilteredPodcastsWithMetadata(String? filterText) {
+  List<Item> getFilteredPodcastItems(String? filterText) {
     final filteredFeedUrls = _getFilteredPodcasts(filterText);
-    final result = <PodcastMetadata>[];
+    final result = <Item>[];
     for (final feedUrl in filteredFeedUrls) {
-      final metadata = getPodcastMetadata(feedUrl);
+      final metadata = getPodcastItem(feedUrl);
       result.add(metadata);
     }
     return result;
@@ -122,12 +124,16 @@ class PodcastLibraryService {
     );
   }
 
-  PodcastMetadata getPodcastMetadata(String feedUrl) => PodcastMetadata(
+  Item getPodcastItem(String feedUrl) => Item(
     feedUrl: feedUrl,
-    imageUrl: getSubscribedPodcastImage(feedUrl),
-    name: getSubscribedPodcastName(feedUrl),
-    artist: getSubscribedPodcastArtist(feedUrl),
-    genreList: getSubScribedPodcastGenreList(feedUrl),
+    artworkUrl: getSubscribedPodcastImage(feedUrl),
+    collectionName: getSubscribedPodcastName(feedUrl),
+    artistName: getSubscribedPodcastArtist(feedUrl),
+    genre:
+        getSubScribedPodcastGenreList(
+          feedUrl,
+        )?.mapIndexed((i, e) => Genre(i, e)).toList() ??
+        <Genre>[],
   );
 
   // Image URL

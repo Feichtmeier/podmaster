@@ -17,7 +17,7 @@ class PodcastFavoriteButton extends StatelessWidget with WatchItMixin {
   @override
   Widget build(BuildContext context) {
     final isSubscribed = watchValue(
-      (PodcastManager m) => m.podcastsCommand.select(
+      (PodcastManager m) => m.podcastCollectionCommand.select(
         (podcasts) => podcasts.any((p) => p.feedUrl == podcastItem.feedUrl),
       ),
     );
@@ -25,14 +25,7 @@ class PodcastFavoriteButton extends StatelessWidget with WatchItMixin {
     void onPressed() => isSubscribed
         ? di<PodcastManager>().removePodcast(feedUrl: podcastItem.feedUrl!)
         : di<PodcastManager>().addPodcast(
-            PodcastMetadata(
-              feedUrl: podcastItem.feedUrl!,
-              name: podcastItem.collectionName!,
-              artist: podcastItem.artistName!,
-              imageUrl: podcastItem.bestArtworkUrl!,
-              genreList:
-                  podcastItem.genre?.map((e) => e.name).toList() ?? <String>[],
-            ),
+            PodcastMetadata.fromItem(podcastItem),
           );
     final icon = Icon(isSubscribed ? Icons.favorite : Icons.favorite_border);
 

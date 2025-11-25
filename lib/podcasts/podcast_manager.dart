@@ -50,30 +50,34 @@ class PodcastManager {
         .debounce(const Duration(milliseconds: 500))
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
-    podcastsCommand = Command.createSync(
-      (filterText) =>
-          podcastLibraryService.getFilteredPodcastsWithMetadata(filterText),
+    podcastCollectionCommand = Command.createSync(
+      (filterText) => podcastLibraryService.getFilteredPodcastItems(filterText),
       initialValue: [],
     );
 
     collectionManager.textChangedCommand.listen(
-      (filterText, sub) => podcastsCommand.run(filterText),
+      (filterText, sub) => podcastCollectionCommand.run(filterText),
     );
 
-    podcastsCommand.run(null);
+    podcastCollectionCommand.run(null);
 
     updateSearchCommand.run(null);
   }
 
+  final PodcastService _podcastService;
+  final PodcastLibraryService _podcastLibraryService;
+  final DownloadService _downloadService;
+  final NotificationsService _notificationsService;
+
   // Map of feedUrl to fetch episodes command
-  final fetchEpisodeMediaCommands =
+  final _fetchEpisodeMediaCommands =
       <String, Command<Item, List<EpisodeMedia>>>{};
 
   Command<Item, List<EpisodeMedia>> _getFetchEpisodesCommand(Item item) {
     if (item.feedUrl == null) {
       throw ArgumentError('Item must have a feedUrl to fetch episodes');
     }
-    return fetchEpisodeMediaCommands.putIfAbsent(
+    return _fetchEpisodeMediaCommands.putIfAbsent(
       item.feedUrl!,
       () => Command.createAsync<Item, List<EpisodeMedia>>(
         (item) async => findEpisodes(item: item),
@@ -87,20 +91,15 @@ class PodcastManager {
     return _getFetchEpisodesCommand(item);
   }
 
-  final PodcastService _podcastService;
-  final PodcastLibraryService _podcastLibraryService;
-  final DownloadService _downloadService;
-  final NotificationsService _notificationsService;
-
   late Command<String?, SearchResult> updateSearchCommand;
-  late Command<String?, List<PodcastMetadata>> podcastsCommand;
+  late Command<String?, List<Item>> podcastCollectionCommand;
 
-  final downloadCommands = <EpisodeMedia, Command<void, void>>{};
+  final _downloadCommands = <EpisodeMedia, Command<void, void>>{};
   final activeDownloads = ListNotifier<EpisodeMedia>();
   final recentDownloads = ListNotifier<EpisodeMedia>();
 
   Command<void, void> getDownloadCommand(EpisodeMedia media) =>
-      downloadCommands.putIfAbsent(media, () => _createDownloadCommand(media));
+      _downloadCommands.putIfAbsent(media, () => _createDownloadCommand(media));
 
   Command<void, void> _createDownloadCommand(EpisodeMedia media) {
     final command = Command.createAsyncNoParamNoResultWithProgress((
@@ -139,12 +138,12 @@ class PodcastManager {
 
   Future<void> addPodcast(PodcastMetadata metadata) async {
     await _podcastLibraryService.addPodcast(metadata);
-    podcastsCommand.run();
+    podcastCollectionCommand.run();
   }
 
   Future<void> removePodcast({required String feedUrl}) async {
     await _podcastLibraryService.removePodcast(feedUrl);
-    podcastsCommand.run();
+    podcastCollectionCommand.run();
   }
 
   final Map<String, Podcast> _podcastCache = {};

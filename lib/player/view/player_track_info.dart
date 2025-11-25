@@ -4,8 +4,11 @@ import 'package:flutter_it/flutter_it.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/duration_x.dart';
+import '../../podcasts/podcast_library_service.dart';
+import '../../podcasts/view/podcast_favorite_button.dart';
 import '../../radio/view/radio_browser_station_star_button.dart';
 import '../../search/copy_to_clipboard_content.dart';
+import '../data/episode_media.dart';
 import '../data/station_media.dart';
 import '../player_manager.dart';
 
@@ -90,7 +93,14 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
               ],
             ),
           ),
-          if (media is StationMedia) const RadioStationStarButton(),
+          if (media is StationMedia)
+            RadioStationStarButton(currentMedia: media)
+          else if (media is EpisodeMedia)
+            PodcastFavoriteButton(
+              podcastItem: di<PodcastLibraryService>().getPodcastItem(
+                media.feedUrl,
+              ),
+            ),
         ],
       ),
     );

@@ -1,7 +1,5 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
-import 'package:podcast_search/podcast_search.dart';
 
 import '../../collection/collection_manager.dart';
 import '../../common/view/ui_constants.dart';
@@ -28,7 +26,9 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
       (CollectionManager m) => m.showOnlyDownloadsNotifier,
     );
 
-    return watchValue((PodcastManager m) => m.podcastsCommand.results).toWidget(
+    return watchValue(
+      (PodcastManager m) => m.podcastCollectionCommand.results,
+    ).toWidget(
       onData: (pees, _) {
         final podcasts = showOnlyDownloads
             ? pees.where((p) => feedsWithDownloads.contains(p.feedUrl))
@@ -39,20 +39,7 @@ class PodcastCollectionView extends StatelessWidget with WatchItMixin {
           itemCount: podcasts.length,
           itemBuilder: (context, index) {
             final item = podcasts.elementAt(index);
-            return PodcastCard(
-              key: ValueKey(item),
-              podcastItem: Item(
-                feedUrl: item.feedUrl,
-                artistName: item.artist,
-                collectionName: item.name,
-                artworkUrl: item.imageUrl,
-                genre:
-                    item.genreList
-                        ?.mapIndexed((i, e) => Genre(i, e))
-                        .toList() ??
-                    <Genre>[],
-              ),
-            );
+            return PodcastCard(key: ValueKey(item), podcastItem: item);
           },
         );
       },
