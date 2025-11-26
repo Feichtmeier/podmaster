@@ -25,7 +25,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_cache_manager: ^3.4.1
-  flutter_it: ^2.0.0
+  flutter_it: ^2.0.1
   flutter_localizations:
     sdk: flutter
   flutter_tabler_icons: ^1.43.0

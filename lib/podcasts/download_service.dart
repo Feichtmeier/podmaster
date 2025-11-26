@@ -19,19 +19,11 @@ class DownloadService {
     required SettingsService settingsService,
   }) : _libraryService = libraryService,
        _dio = dio,
-       _settingsService = settingsService {
-    _propertiesChangedSubscription = _libraryService.propertiesChanged.listen((
-      _,
-    ) {
-      // Notify listeners when library changes (downloads added/removed)
-      // This allows UI watching isDownloaded to update
-    });
-  }
+       _settingsService = settingsService;
 
   final PodcastLibraryService _libraryService;
   final SettingsService _settingsService;
   final Dio _dio;
-  StreamSubscription<bool>? _propertiesChangedSubscription;
 
   /// Downloads an episode to the local filesystem.
   ///
@@ -88,11 +80,6 @@ class DownloadService {
   }
 
   /// Deletes all downloaded episodes.
-  Future<void> deleteAllDownloads() async {
-    await _libraryService.removeAllDownloads();
-  }
-
-  Future<void> dispose() async {
-    await _propertiesChangedSubscription?.cancel();
-  }
+  Future<void> deleteAllDownloads() async =>
+      _libraryService.removeAllDownloads();
 }

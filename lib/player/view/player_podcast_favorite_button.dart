@@ -30,6 +30,7 @@ class PlayerPodcastFavoriteButton extends StatelessWidget with WatchItMixin {
             Item(
               feedUrl: episodeMedia.feedUrl,
               artworkUrl: episodeMedia.albumArtUrl,
+              artworkUrl600: episodeMedia.albumArtUrl,
               collectionName: episodeMedia.collectionName,
               artistName: episodeMedia.artist,
             ),
