@@ -14,14 +14,28 @@ class RadioBrowserStationStarButton extends StatelessWidget with WatchItMixin {
   @override
   Widget build(BuildContext context) {
     final isFavorite = watchValue(
-      (RadioManager s) => s.favoriteStationsCommand.select(
+      (RadioManager s) => s.getFavoriteStationsCommand.select(
         (favorites) => favorites.any((m) => m.id == media.id),
       ),
     );
+
+    // Error handler for favorite toggle
+    registerHandler(
+      select: (RadioManager m) => m.toggleFavoriteStationCommand.errors,
+      handler: (context, error, cancel) {
+        if (error != null && error.error is! UndoException) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update favorite: ${error.error}'),
+            ),
+          );
+        }
+      },
+    );
+
     return IconButton(
-      onPressed: () => isFavorite
-          ? di<RadioManager>().removeFavoriteStation(media.id)
-          : di<RadioManager>().addFavoriteStation(media.id),
+      onPressed: () =>
+          di<RadioManager>().toggleFavoriteStationCommand.run(media.id),
       icon: Icon(isFavorite ? YaruIcons.star_filled : YaruIcons.star),
     );
   }
@@ -38,16 +52,31 @@ class RadioStationStarButton extends StatelessWidget with WatchItMixin {
       preserveState: false,
     ).data;
     final isFavorite = watchValue(
-      (RadioManager s) => s.favoriteStationsCommand.select(
+      (RadioManager s) => s.getFavoriteStationsCommand.select(
         (favorites) => favorites.any((m) => m.id == currentMedia?.id),
       ),
     );
+
+    // Error handler for favorite toggle
+    registerHandler(
+      select: (RadioManager m) => m.toggleFavoriteStationCommand.errors,
+      handler: (context, error, cancel) {
+        if (error != null && error.error is! UndoException) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update favorite: ${error.error}'),
+            ),
+          );
+        }
+      },
+    );
+
     return IconButton(
       onPressed: currentMedia == null
           ? null
-          : () => isFavorite
-                ? di<RadioManager>().removeFavoriteStation(currentMedia.id)
-                : di<RadioManager>().addFavoriteStation(currentMedia.id),
+          : () => di<RadioManager>().toggleFavoriteStationCommand.run(
+              currentMedia.id,
+            ),
       icon: Icon(isFavorite ? YaruIcons.star_filled : YaruIcons.star),
     );
   }

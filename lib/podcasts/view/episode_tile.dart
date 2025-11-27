@@ -9,8 +9,6 @@ import '../../extensions/duration_x.dart';
 import '../../extensions/string_x.dart';
 import '../../player/data/episode_media.dart';
 import '../../player/player_manager.dart';
-import '../data/podcast_metadata.dart';
-import '../podcast_manager.dart';
 import 'download_button.dart';
 
 class EpisodeTile extends StatelessWidget with WatchItMixin {
@@ -84,18 +82,7 @@ class EpisodeTile extends StatelessWidget with WatchItMixin {
               Text(
                 '${episode.creationDateTime!.unixTimeToDateString} · ${episode.duration?.formattedTime ?? 'Unknown duration'}',
               ),
-              DownloadButton(
-                episode: episode,
-                addPodcast: () => di<PodcastManager>().addPodcast(
-                  PodcastMetadata(
-                    feedUrl: episode.feedUrl,
-                    imageUrl: podcastImage,
-                    artist: episode.artist ?? '',
-                    name: episode.collectionName ?? '',
-                    genreList: episode.genres,
-                  ),
-                ),
-              ),
+              DownloadButton(episode: episode),
             ],
           ),
           titleTextStyle: theme.textTheme.labelSmall,

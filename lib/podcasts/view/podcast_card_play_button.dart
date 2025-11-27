@@ -1,0 +1,23 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_it/flutter_it.dart';
+import 'package:podcast_search/podcast_search.dart';
+
+import '../podcast_manager.dart';
+
+class PodcastCardPlayButton extends StatelessWidget {
+  const PodcastCardPlayButton({super.key, required this.podcastItem});
+
+  final Item podcastItem;
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton.small(
+      heroTag: 'podcastcardfap',
+      onPressed: () {
+        final proxy = di<PodcastManager>().getOrCreateProxy(podcastItem);
+        proxy.playEpisodesCommand(0);
+      },
+      child: const Icon(Icons.play_arrow),
+    );
+  }
+}

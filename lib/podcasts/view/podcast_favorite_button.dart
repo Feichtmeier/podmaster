@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
 
-import '../data/podcast_metadata.dart';
 import '../podcast_manager.dart';
 
 class PodcastFavoriteButton extends StatelessWidget with WatchItMixin {
@@ -17,33 +16,40 @@ class PodcastFavoriteButton extends StatelessWidget with WatchItMixin {
   @override
   Widget build(BuildContext context) {
     final isSubscribed = watchValue(
-      (PodcastManager m) => m.podcastsCommand.select(
+      (PodcastManager m) => m.getSubscribedPodcastsCommand.select(
         (podcasts) => podcasts.any((p) => p.feedUrl == podcastItem.feedUrl),
       ),
     );
 
-    void onPressed() => isSubscribed
-        ? di<PodcastManager>().removePodcast(feedUrl: podcastItem.feedUrl!)
-        : di<PodcastManager>().addPodcast(
-            PodcastMetadata(
-              feedUrl: podcastItem.feedUrl!,
-              name: podcastItem.collectionName!,
-              artist: podcastItem.artistName!,
-              imageUrl: podcastItem.bestArtworkUrl!,
-              genreList:
-                  podcastItem.genre?.map((e) => e.name).toList() ?? <String>[],
+    // Error handler for subscription toggle
+    registerHandler(
+      select: (PodcastManager m) => m.togglePodcastSubscriptionCommand.errors,
+      handler: (context, error, cancel) {
+        if (error != null && error.error is! UndoException) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update subscription: ${error.error}'),
             ),
           );
+        }
+      },
+    );
+
     final icon = Icon(isSubscribed ? Icons.favorite : Icons.favorite_border);
 
     if (_floating) {
       return FloatingActionButton.small(
         heroTag: 'favtag',
-        onPressed: onPressed,
+        onPressed: () => di<PodcastManager>().togglePodcastSubscriptionCommand
+            .run(podcastItem),
         child: icon,
       );
     }
 
-    return IconButton(onPressed: onPressed, icon: icon);
+    return IconButton(
+      onPressed: () => di<PodcastManager>().togglePodcastSubscriptionCommand
+          .run(podcastItem),
+      icon: icon,
+    );
   }
 }

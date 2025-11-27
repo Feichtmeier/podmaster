@@ -14,7 +14,7 @@ import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
 import '../../player/view/player_view.dart';
 import '../data/podcast_genre.dart';
-import '../podcast_service.dart';
+import '../podcast_manager.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page_episode_list.dart';
 import 'recent_downloads_button.dart';
@@ -95,10 +95,9 @@ class _PodcastPageState extends State<PodcastPage> {
                             wrapInFakeScroll: false,
                             color: Colors.white,
                             text:
-                                di<PodcastService>()
-                                    .getPodcastDescriptionFromCache(
-                                      widget.podcastItem.feedUrl,
-                                    ) ??
+                                di<PodcastManager>().getPodcastDescription(
+                                  widget.podcastItem.feedUrl,
+                                ) ??
                                 '',
                           ),
                         ),

@@ -16,7 +16,7 @@ class RadioFavoritesList extends StatelessWidget with WatchItMixin {
   @override
   Widget build(BuildContext context) =>
       watchValue(
-        (RadioManager s) => s.favoriteStationsCommand.results,
+        (RadioManager s) => s.getFavoriteStationsCommand.results,
       ).toWidget(
         onData: (favorites, _) => ListView.builder(
           padding: const EdgeInsets.only(
@@ -40,7 +40,7 @@ class RadioFavoritesList extends StatelessWidget with WatchItMixin {
             const Center(child: CircularProgressIndicator.adaptive()),
         onError: (error, _, _) => RadioHostNotConnectedContent(
           message: 'Error: $error',
-          onRetry: di<RadioManager>().favoriteStationsCommand.run,
+          onRetry: di<RadioManager>().getFavoriteStationsCommand.run,
         ),
       );
 }

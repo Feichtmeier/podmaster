@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
-import 'package:future_loading_dialog/future_loading_dialog.dart';
 import 'package:phoenix_theme/phoenix_theme.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -8,13 +7,12 @@ import '../../common/view/safe_network_image.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
-import '../../player/player_manager.dart';
-import '../download_manager.dart';
-import '../podcast_service.dart';
+import '../podcast_manager.dart';
+import 'podcast_card_play_button.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
 
-class PodcastCard extends StatefulWidget {
+class PodcastCard extends StatefulWidget with WatchItStatefulWidgetMixin {
   const PodcastCard({super.key, required this.podcastItem});
 
   final Item podcastItem;
@@ -28,6 +26,28 @@ class _PodcastCardState extends State<PodcastCard> {
 
   @override
   Widget build(BuildContext context) {
+    final proxy = createOnce(
+      () => di<PodcastManager>().getOrCreateProxy(widget.podcastItem),
+    );
+
+    registerHandler(
+      target: proxy.playEpisodesCommand.results,
+      handler: (context, CommandResult<int, void>? result, cancel) {
+        if (result == null) return;
+
+        if (result.isRunning) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(child: CircularProgressIndicator()),
+          );
+        } else if (result.isSuccess) {
+          Navigator.of(context).pop();
+        } else if (result.hasError) {
+          Navigator.of(context).pop();
+        }
+      },
+    );
     final theme = context.theme;
     final isLight = theme.colorScheme.isLight;
     const borderRadiusGeometry = BorderRadiusGeometry.only(
@@ -94,33 +114,8 @@ class _PodcastCardState extends State<PodcastCard> {
                             spacing: kBigPadding,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              FloatingActionButton.small(
-                                heroTag: 'podcastcardfap',
-                                onPressed: () async {
-                                  final res = await showFutureLoadingDialog(
-                                    context: context,
-                                    future: () async => di<PodcastService>()
-                                        .findEpisodes(item: widget.podcastItem),
-                                  );
-                                  if (res.isValue) {
-                                    final episodes = res.asValue!.value;
-                                    final withDownloads = episodes.map((e) {
-                                      final download = di<DownloadManager>()
-                                          .getDownload(e.id);
-                                      if (download != null) {
-                                        return e.copyWithX(resource: download);
-                                      }
-                                      return e;
-                                    }).toList();
-                                    if (withDownloads.isNotEmpty) {
-                                      await di<PlayerManager>().setPlaylist(
-                                        withDownloads,
-                                        index: 0,
-                                      );
-                                    }
-                                  }
-                                },
-                                child: const Icon(Icons.play_arrow),
+                              PodcastCardPlayButton(
+                                podcastItem: widget.podcastItem,
                               ),
                               PodcastFavoriteButton.floating(
                                 podcastItem: widget.podcastItem,
