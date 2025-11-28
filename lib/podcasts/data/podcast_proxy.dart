@@ -8,8 +8,12 @@ import '../podcast_service.dart';
 /// Wraps Item (search result) and lazily loads Podcast + episodes.
 /// Each podcast owns its own fetchEpisodesCommand.
 class PodcastProxy {
-  PodcastProxy({required this.item, required PodcastService podcastService})
-    : _podcastService = podcastService {
+  PodcastProxy({
+    required this.item,
+    PodcastService? podcastService,
+    PlayerManager? playerManager,
+  }) : _podcastService = podcastService ?? di<PodcastService>(),
+       _playerManager = playerManager ?? di<PlayerManager>() {
     fetchEpisodesCommand = Command.createAsyncNoParam<List<EpisodeMedia>>(
       () async {
         if (_episodes != null) return _episodes!;
@@ -25,6 +29,7 @@ class PodcastProxy {
 
   final Item item;
   final PodcastService _podcastService;
+  final PlayerManager _playerManager;
 
   Podcast? _podcast;
   List<EpisodeMedia>? _episodes;
@@ -41,7 +46,7 @@ class PodcastProxy {
     }
 
     if (_episodes != null && _episodes!.isNotEmpty) {
-      await di<PlayerManager>().setPlaylist(_episodes!, index: startIndex);
+      await _playerManager.setPlaylist(_episodes!, index: startIndex);
     }
   });
 
