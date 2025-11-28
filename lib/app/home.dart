@@ -8,7 +8,6 @@ import '../extensions/build_context_x.dart';
 import '../player/player_manager.dart';
 import '../player/view/player_full_view.dart';
 import '../player/view/player_view.dart';
-import '../podcasts/download_manager.dart';
 import '../podcasts/view/recent_downloads_button.dart';
 import '../search/view/search_view.dart';
 import '../settings/view/settings_dialog.dart';
@@ -18,9 +17,16 @@ class Home extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    registerStreamHandler(
-      select: (DownloadManager m) => m.messageStream,
-      handler: downloadMessageStreamHandler,
+    registerStreamHandler<Stream<CommandError>, CommandError>(
+      target: Command.globalErrors,
+      handler: (context, snapshot, cancel) {
+        if (snapshot.hasData) {
+          final error = snapshot.data!;
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+            SnackBar(content: Text('Download error: ${error.error}')),
+          );
+        }
+      },
     );
 
     final playerFullWindowMode = watchValue(
