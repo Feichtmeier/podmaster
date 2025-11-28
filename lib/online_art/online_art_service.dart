@@ -59,9 +59,8 @@ class OnlineArtService {
   final _store = <String, String?>{};
 
   String? put({required String key, String? url}) {
-    return _store.containsKey(key)
-        ? _store.update(key, (value) => url)
-        : _store.putIfAbsent(key, () => url);
+    _store[key] = url;
+    return url;
   }
 
   String? get(String? icyTitle) => icyTitle == null ? null : _store[icyTitle];
