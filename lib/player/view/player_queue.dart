@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 
+import '../../common/view/tap_able_text.dart';
 import '../../common/view/theme.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
+import '../../podcasts/view/podcast_page.dart';
+import '../../radio/view/station_page.dart';
+import '../data/episode_media.dart';
+import '../data/station_media.dart';
 import '../player_manager.dart';
 
 class PlayerQueue extends StatefulWidget with WatchItStatefulWidgetMixin {
@@ -80,9 +85,20 @@ class _PlayerQueueState extends State<PlayerQueue> {
                           child: ListTile(
                             onTap: () => di<PlayerManager>().jump(index),
                             leading: Text('${index + 1}'),
-                            title: Text(
-                              media.title?.unEscapeHtml ?? 'Unknown',
+                            title: TapAbleText(
+                              text: media.title?.unEscapeHtml ?? 'Unknown',
                               maxLines: 2,
+                              onTap: () => switch (media) {
+                                StationMedia s => StationPage.go(
+                                  context,
+                                  media: s,
+                                ),
+                                EpisodeMedia e => PodcastPage.go(
+                                  context,
+                                  media: e,
+                                ),
+                                _ => null,
+                              },
                             ),
                             subtitle: Text(
                               media.artist ?? 'Unknown',
