@@ -24,17 +24,22 @@ class PodcastCard extends StatefulWidget with WatchItStatefulWidgetMixin {
 
 class _PodcastCardState extends State<PodcastCard> {
   bool _hovered = false;
+  late Command<int, void> command;
+
+  @override
+  void initState() {
+    super.initState();
+    command = di<PodcastManager>().getOrCreatePlayCommand(
+      widget.podcastItem.feedUrl!,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final command = createOnce(
-      () => di<PodcastManager>().getFetchEpisodesAndPlayCommand(
-        widget.podcastItem.feedUrl!,
-      ),
-    );
-
     registerHandler(
-      target: command.results,
+      target: di<PodcastManager>()
+          .getOrCreatePlayCommand(widget.podcastItem.feedUrl!)
+          .results,
       handler: (context, CommandResult<int, void>? result, cancel) {
         if (result == null) return;
         if (result.isRunning) {

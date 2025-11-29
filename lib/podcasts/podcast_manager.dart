@@ -108,12 +108,11 @@ class PodcastManager {
   }
 
   final Map<String, Command<int, void>> _fetchAndPlayCommands = {};
-  Command<int, void> getFetchEpisodesAndPlayCommand(String feedUrl) {
-    return _fetchAndPlayCommands.putIfAbsent(
-      feedUrl,
-      () => _createFetchEpisodesAndPlayCommand(feedUrl),
-    );
-  }
+  Command<int, void> getOrCreatePlayCommand(String feedUrl) =>
+      _fetchAndPlayCommands.putIfAbsent(
+        feedUrl,
+        () => _createFetchEpisodesAndPlayCommand(feedUrl),
+      );
 
   Command<int, void> _createFetchEpisodesAndPlayCommand(String feedUrl) =>
       Command.createAsyncNoResult<int>((startIndex) async {

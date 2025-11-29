@@ -13,7 +13,7 @@ class PodcastCardPlayButton extends StatelessWidget with WatchItMixin {
   Widget build(BuildContext context) => FloatingActionButton.small(
     heroTag: 'podcastcardfap',
     onPressed: () => di<PodcastManager>()
-        .getFetchEpisodesAndPlayCommand(podcastItem.feedUrl!)
+        .getOrCreatePlayCommand(podcastItem.feedUrl!)
         .run(0),
     child: const Icon(Icons.play_arrow),
   );
