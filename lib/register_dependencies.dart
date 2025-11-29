@@ -90,10 +90,7 @@ void registerDependencies() {
               : null,
           androidNotificationChannelDescription: 'MusicPod Media Controls',
         ),
-        builder: () => PlayerManager(
-          controller: di<VideoController>(),
-          podcastLibraryService: di<PodcastLibraryService>(),
-        ),
+        builder: () => PlayerManager(controller: di<VideoController>()),
       ),
       // dependsOn: [VideoController],
       dispose: (s) async => s.dispose(),

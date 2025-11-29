@@ -200,7 +200,17 @@ class PodcastManager {
         ).runAsync(feedUrl);
 
         if (episodes.isNotEmpty) {
-          await _playerManager.setPlaylist(episodes, index: startIndex);
+          await _playerManager.setPlaylist(
+            episodes.map((e) {
+              if (_podcastLibraryService.getDownload(e.url) != null) {
+                return e.copyWithX(
+                  resource: _podcastLibraryService.getDownload(e.url)!,
+                );
+              }
+              return e;
+            }).toList(),
+            index: startIndex,
+          );
         }
       });
 
