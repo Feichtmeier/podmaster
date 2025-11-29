@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 
+import '../../common/view/tap_able_text.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/duration_x.dart';
+import '../../podcasts/view/podcast_page.dart';
 import '../../radio/view/radio_browser_station_star_button.dart';
+import '../../radio/view/station_page.dart';
 import '../../search/copy_to_clipboard_content.dart';
 import '../data/episode_media.dart';
 import '../data/station_media.dart';
@@ -47,15 +50,17 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
     );
 
     return InkWell(
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: CopyClipboardContent(
-            text: media is StationMedia && remoteTitle != null
-                ? remoteTitle
-                : '${media.artist ?? 'Unknown'} - ${media.title ?? 'Unknown'}',
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: CopyClipboardContent(
+              text: media is StationMedia && remoteTitle != null
+                  ? remoteTitle
+                  : '${media.artist ?? 'Unknown'} - ${media.title ?? 'Unknown'}',
+            ),
           ),
-        ),
-      ),
+        );
+      },
       child: Row(
         spacing: kSmallPadding,
         mainAxisSize: MainAxisSize.min,
@@ -65,11 +70,19 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: crossAxisAlignment,
               children: [
-                Text(
-                  (media is! StationMedia
+                TapAbleText(
+                  text:
+                      (media is! StationMedia
                           ? media.collectionName
                           : media.title) ??
                       'Unknown',
+                  onTap: () {
+                    if (media is StationMedia) {
+                      StationPage.go(context, media: media);
+                    } else if (media is EpisodeMedia) {
+                      PodcastPage.go(context, media: media);
+                    }
+                  },
                   maxLines: 1,
                   style: (artistStyle ?? textTheme.labelSmall)?.copyWith(
                     color: textColor,

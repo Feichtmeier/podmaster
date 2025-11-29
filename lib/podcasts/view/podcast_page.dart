@@ -2,6 +2,7 @@ import 'package:blur/blur.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
+import 'package:go_router/go_router.dart';
 import 'package:podcast_search/podcast_search.dart';
 import 'package:yaru/widgets.dart';
 
@@ -12,6 +13,7 @@ import '../../common/view/sliver_sticky_panel.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
+import '../../player/data/episode_media.dart';
 import '../../player/view/player_view.dart';
 import '../data/podcast_genre.dart';
 import '../data/podcast_metadata.dart';
@@ -25,6 +27,30 @@ class PodcastPage extends StatelessWidget with WatchItMixin {
 
   final String feedUrl;
   final Item? podcastItem;
+
+  static void go(BuildContext context, {EpisodeMedia? media, Item? item}) {
+    if (media == null && item == null) {
+      ScaffoldMessenger.maybeOf(
+        context,
+      )?.showSnackBar(SnackBar(content: Text(context.l10n.noPodcastFound)));
+      return;
+    }
+
+    final feedUrl = media?.feedUrl ?? item!.feedUrl!;
+
+    context.go(
+      '/podcast/${Uri.encodeComponent(feedUrl)}',
+      extra:
+          item ??
+          Item(
+            feedUrl: media!.feedUrl,
+            artworkUrl: media.artUrl,
+            collectionName: media.collectionName,
+            artistName: media.artist,
+            genre: media.genres.mapIndexed((i, e) => Genre(i, e)).toList(),
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +75,11 @@ class PodcastPage extends StatelessWidget with WatchItMixin {
 
     return Scaffold(
       appBar: YaruWindowTitleBar(
-        leading: const Center(child: BackButton()),
+        leading: Center(
+          child: BackButton(
+            onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+          ),
+        ),
         title: Text(
           isRunning ? '...' : name?.unEscapeHtml ?? context.l10n.podcast,
         ),

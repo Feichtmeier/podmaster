@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
+import 'package:go_router/go_router.dart';
 import 'package:phoenix_theme/phoenix_theme.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -49,9 +50,9 @@ class _PodcastCardState extends State<PodcastCard> {
             builder: (_) => const PodcastLoadingDialog(),
           );
         } else if (result.isSuccess) {
-          Navigator.of(context).pop();
+          context.canPop() ? context.pop() : null;
         } else if (result.hasError) {
-          Navigator.of(context).pop();
+          context.canPop() ? context.pop() : null;
         }
       },
     );
@@ -66,14 +67,7 @@ class _PodcastCardState extends State<PodcastCard> {
       focusColor: theme.colorScheme.primary,
       borderRadius: BorderRadius.circular(12),
       onHover: (hovering) => setState(() => _hovered = hovering),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => PodcastPage(
-            feedUrl: widget.podcastItem.feedUrl!,
-            podcastItem: widget.podcastItem,
-          ),
-        ),
-      ),
+      onTap: () => PodcastPage.go(context, item: widget.podcastItem),
       child: SizedBox(
         width: kGridViewDelegate.maxCrossAxisExtent,
         height: kGridViewDelegate.mainAxisExtent,

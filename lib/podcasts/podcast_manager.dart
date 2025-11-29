@@ -88,6 +88,7 @@ class PodcastManager {
               ),
               collectionName: e.name,
               artistName: e.artist,
+              genre: e.genreList?.mapIndexed((i, e) => Genre(i, e)).toList(),
             ),
           )
           .toList();

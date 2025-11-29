@@ -14,6 +14,7 @@ import 'collection/collection_manager.dart';
 import 'common/extenal_path_service.dart';
 import 'common/platforms.dart';
 import 'notifications/notifications_service.dart';
+import 'online_art/online_art_model.dart';
 import 'online_art/online_art_service.dart';
 import 'player/player_manager.dart';
 import 'podcasts/download_service.dart';
@@ -149,5 +150,8 @@ void registerDependencies() {
         searchManager: di<SearchManager>(),
         collectionManager: di<CollectionManager>(),
       ),
+    )
+    ..registerLazySingleton<OnlineArtModel>(
+      () => OnlineArtModel(onlineArtService: di<OnlineArtService>()),
     );
 }
