@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_it/flutter_it.dart';
@@ -36,44 +37,14 @@ class PodcastManager {
        _downloadService = downloadService,
        _podcastLibraryService = podcastLibraryService,
        _notificationsService = notificationsService,
-       _playerManager = playerManager {
+       _playerManager = playerManager,
+       _searchManager = searchManager,
+       _collectionManager = collectionManager {
     Command.globalExceptionHandler = (e, s) {
       printMessageInDebugMode(e.error, s);
     };
-    updateSearchCommand = Command.createAsync<String?, SearchResult>(
-      (String? query) async => _podcastService.search(
-        searchQuery: query,
-        limit: 20,
-        country: CountryX.platformDefault,
-      ),
-      initialValue: SearchResult(items: []),
-    );
 
-    // Subscription doesn't need disposal - manager lives for app lifetime
-    searchManager.textChangedCommand
-        .debounce(const Duration(milliseconds: 500))
-        .listen((filterText, sub) => updateSearchCommand.run(filterText));
-
-    getSubscribedPodcastsCommand = Command.createSync((filterText) {
-      final items = podcastLibraryService.getFilteredPodcastsItems(filterText);
-
-      return items
-          .map(
-            (e) => Item(
-              feedUrl: e.feedUrl,
-              artworkUrl: podcastLibraryService.getSubscribedPodcastImage(
-                e.feedUrl,
-              ),
-              collectionName: e.name,
-              artistName: e.artist,
-            ),
-          )
-          .toList();
-    }, initialValue: []);
-
-    collectionManager.textChangedCommand.listen(
-      (filterText, sub) => getSubscribedPodcastsCommand.run(filterText),
-    );
+    _initializeCommands();
 
     getSubscribedPodcastsCommand.run(null);
 
@@ -85,8 +56,116 @@ class PodcastManager {
   final DownloadService _downloadService;
   final NotificationsService _notificationsService;
   final PlayerManager _playerManager;
+  final SearchManager _searchManager;
+  final CollectionManager _collectionManager;
 
   final showInfo = ValueNotifier(false);
+
+  void _initializeCommands() {
+    updateSearchCommand = Command.createAsync<String?, SearchResult>(
+      (String? query) async => _podcastService.search(
+        searchQuery: query,
+        limit: 20,
+        country: CountryX.platformDefault,
+      ),
+      initialValue: SearchResult(items: []),
+    );
+
+    // Subscription doesn't need disposal - manager lives for app lifetime
+    _searchManager.textChangedCommand
+        .debounce(const Duration(milliseconds: 500))
+        .listen((filterText, sub) => updateSearchCommand.run(filterText));
+
+    getSubscribedPodcastsCommand = Command.createSync((filterText) {
+      final items = _podcastLibraryService.getFilteredPodcastsItems(filterText);
+
+      return items
+          .map(
+            (e) => Item(
+              feedUrl: e.feedUrl,
+              artworkUrl: _podcastLibraryService.getSubscribedPodcastImage(
+                e.feedUrl,
+              ),
+              collectionName: e.name,
+              artistName: e.artist,
+            ),
+          )
+          .toList();
+    }, initialValue: []);
+
+    _collectionManager.textChangedCommand.listen(
+      (filterText, sub) => getSubscribedPodcastsCommand.run(filterText),
+    );
+
+    togglePodcastSubscriptionCommand =
+        Command.createUndoableNoResult<
+          PodcastMetadata,
+          ({bool wasAdd, PodcastMetadata metadata})
+        >(
+          (metadata, stack) async {
+            final feedUrl = metadata.feedUrl;
+
+            final currentList = getSubscribedPodcastsCommand.value;
+            final isSubscribed = currentList.any((p) => p.feedUrl == feedUrl);
+
+            // Store operation info for undo
+            stack.push((wasAdd: !isSubscribed, metadata: metadata));
+
+            // Optimistic update: modify list directly
+            if (isSubscribed) {
+              getSubscribedPodcastsCommand.value = currentList
+                  .where((p) => p.feedUrl != feedUrl)
+                  .toList();
+            } else {
+              getSubscribedPodcastsCommand.value = [
+                ...currentList,
+                Item(
+                  feedUrl: metadata.feedUrl,
+                  artworkUrl: metadata.imageUrl,
+                  collectionName: metadata.name,
+                  artistName: metadata.artist,
+                  genre: metadata.genreList
+                      ?.mapIndexed((i, e) => Genre(i, e))
+                      .toList(),
+                ),
+              ];
+            }
+
+            // Async persist
+            if (isSubscribed) {
+              await removePodcast(feedUrl: metadata.feedUrl);
+            } else {
+              await addPodcast(metadata);
+            }
+          },
+          undo: (stack, reason) async {
+            final undoData = stack.pop();
+            final currentList = getSubscribedPodcastsCommand.value;
+
+            if (undoData.wasAdd) {
+              // Was an add, so remove it
+              getSubscribedPodcastsCommand.value = currentList
+                  .where((p) => p.feedUrl != undoData.metadata.feedUrl)
+                  .toList();
+            } else {
+              // Was a remove, so add it back
+              getSubscribedPodcastsCommand.value = [
+                ...currentList,
+                Item(
+                  feedUrl: undoData.metadata.feedUrl,
+                  artworkUrl: undoData.metadata.imageUrl,
+                  collectionName: undoData.metadata.name,
+                  artistName: undoData.metadata.artist,
+                  genre: undoData.metadata.genreList
+                      ?.mapIndexed((i, e) => Genre(i, e))
+                      .toList(),
+                ),
+              ];
+            }
+          },
+          undoOnExecutionFailure: true,
+        );
+  }
 
   // Map of feedUrl to fetch episodes command
   final _fetchEpisodeMediaCommands =
@@ -211,6 +290,8 @@ class PodcastManager {
     await _podcastLibraryService.removePodcast(feedUrl);
     getSubscribedPodcastsCommand.run();
   }
+
+  late final Command<PodcastMetadata, void> togglePodcastSubscriptionCommand;
 
   final Map<String, Podcast> _podcastCache = {};
   Podcast? getPodcastFromCache(String? feedUrl) => _podcastCache[feedUrl];

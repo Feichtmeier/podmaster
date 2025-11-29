@@ -21,9 +21,22 @@ class PodcastFavoriteButton extends StatelessWidget with WatchItMixin {
       ),
     );
 
-    void onPressed() => isSubscribed
-        ? di<PodcastManager>().removePodcast(feedUrl: metadata.feedUrl)
-        : di<PodcastManager>().addPodcast(metadata);
+    // Error handler for subscription toggle
+    registerHandler(
+      select: (PodcastManager m) => m.togglePodcastSubscriptionCommand.errors,
+      handler: (context, error, cancel) {
+        if (error != null && error.error is! UndoException) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update subscription: ${error.error}'),
+            ),
+          );
+        }
+      },
+    );
+
+    void onPressed() =>
+        di<PodcastManager>().togglePodcastSubscriptionCommand.run(metadata);
     final icon = Icon(isSubscribed ? Icons.favorite : Icons.favorite_border);
 
     if (_floating) {

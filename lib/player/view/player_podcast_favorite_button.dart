@@ -24,16 +24,18 @@ class PlayerPodcastFavoriteButton extends StatelessWidget with WatchItMixin {
       ),
     );
 
-    void onPressed() => isSubscribed
-        ? di<PodcastManager>().removePodcast(feedUrl: episodeMedia.feedUrl)
-        : di<PodcastManager>().addPodcast(
-            PodcastMetadata(
-              feedUrl: episodeMedia.feedUrl,
-              imageUrl: episodeMedia.albumArtUrl,
-              name: episodeMedia.collectionName,
-              artist: episodeMedia.artist,
-            ),
-          );
+    void onPressed() =>
+        di<PodcastManager>().togglePodcastSubscriptionCommand.run(
+          PodcastMetadata(
+            feedUrl: episodeMedia.feedUrl,
+            name: episodeMedia.collectionName,
+            imageUrl: episodeMedia.collectionArtUrl,
+            genreList: episodeMedia.genres,
+            artist: episodeMedia.artist,
+            description: episodeMedia.description,
+          ),
+        );
+
     final icon = Icon(isSubscribed ? Icons.favorite : Icons.favorite_border);
 
     if (_floating) {
