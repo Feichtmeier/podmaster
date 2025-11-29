@@ -22,7 +22,10 @@ extension SPKeys on SharedPreferences {
   static const usePlayerColor = 'usePlayerColor';
   static const saveWindowSize = 'saveWindowSize';
   static const podcastFeedUrls = 'podcastFeedUrls';
-  static const podcastDataSuffix = '_podcastData';
+  static const podcastImageUrlSuffix = '_imageUrl';
+  static const podcastNameSuffix = '_name';
+  static const podcastArtistSuffix = '_artist';
+  static const podcastGenreListSuffix = '_genreList';
   static const podcastEpisodeDownloadedSuffix = '_episodeDownloaded';
   static const podcastsWithDownloads = 'podcastsWithDownloads';
   static const podcastsWithUpdates = 'podcastsWithUpdates';

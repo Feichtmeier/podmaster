@@ -32,7 +32,6 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
     final media = watchStream(
       (PlayerManager p) => p.currentMediaStream,
       initialValue: di<PlayerManager>().currentMedia,
-      allowStreamChange: true,
       preserveState: false,
     ).data;
 

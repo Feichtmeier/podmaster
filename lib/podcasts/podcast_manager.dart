@@ -31,8 +31,7 @@ class PodcastManager {
   }) : _podcastService = podcastService,
        _downloadService = downloadService,
        _podcastLibraryService = podcastLibraryService,
-       _notificationsService = notificationsService,
-       _searchManager = searchManager {
+       _notificationsService = notificationsService {
     Command.globalExceptionHandler = (e, s) {
       printMessageInDebugMode(e.error, s);
     };
@@ -46,7 +45,7 @@ class PodcastManager {
     );
 
     // Subscription doesn't need disposal - manager lives for app lifetime
-    _searchManager.textChangedCommand
+    searchManager.textChangedCommand
         .debounce(const Duration(milliseconds: 500))
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
@@ -69,7 +68,6 @@ class PodcastManager {
   final PodcastLibraryService _podcastLibraryService;
   final DownloadService _downloadService;
   final NotificationsService _notificationsService;
-  final SearchManager _searchManager;
 
   // Map of feedUrl to fetch episodes command
   final _fetchEpisodeMediaCommands =
@@ -139,13 +137,13 @@ class PodcastManager {
   }
 
   Future<void> addPodcast(Item item) async {
-    await _podcastLibraryService.addSubscribedPodcasts([item]);
-    getSubscribedPodcastsCommand.run(_searchManager.textChangedCommand.value);
+    await _podcastLibraryService.addPodcast(item);
+    getSubscribedPodcastsCommand.run();
   }
 
   Future<void> removePodcast({required String feedUrl}) async {
-    await _podcastLibraryService.removeSubscribedPodcast(feedUrl);
-    getSubscribedPodcastsCommand.run(_searchManager.textChangedCommand.value);
+    await _podcastLibraryService.removePodcast(feedUrl);
+    getSubscribedPodcastsCommand.run();
   }
 
   final Map<String, Podcast> _podcastCache = {};
@@ -176,6 +174,18 @@ class PodcastManager {
       }
     }
 
+    if (podcast?.image != null) {
+      _podcastLibraryService.addSubscribedPodcastImage(
+        feedUrl: url,
+        imageUrl: podcast!.image!,
+      );
+    } else if (item?.bestArtworkUrl != null) {
+      _podcastLibraryService.addSubscribedPodcastImage(
+        feedUrl: url,
+        imageUrl: item!.bestArtworkUrl!,
+      );
+    }
+
     return podcast?.toEpisodeMediaList(url, item) ?? [];
   }
 
@@ -196,9 +206,7 @@ class PodcastManager {
       } on Exception catch (e) {
         printMessageInDebugMode(e);
       }
-      final name = _podcastLibraryService
-          .getPodcastItem(feedUrl)
-          ?.collectionName;
+      final name = _podcastLibraryService.getSubscribedPodcastName(feedUrl);
 
       printMessageInDebugMode('checking update for: ${name ?? feedUrl} ');
       printMessageInDebugMode(

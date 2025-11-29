@@ -198,10 +198,10 @@ packages:
     dependency: transitive
     description:
       name: command_it
-      sha256: "4f1cd9131565e0d03569213b40180d7ea12830cc31fcb563a8081cd9fdddec3b"
+      sha256: "838052aabbf66e403aee3af195636e580b90c479befda1acec16569a92036f42"
       url: "https://pub.dev"
     source: hosted
-    version: "9.4.2"
+    version: "9.4.1"
   convert:
     dependency: transitive
     description:
@@ -395,10 +395,10 @@ packages:
     dependency: "direct main"
     description:
       name: flutter_it
-      sha256: "12ad0696a2aaabbe9e86eee9b296f8906e043d31e0283b09c3a12c309d6affac"
+      sha256: "81fe23d007abd87f26a3dec0b52ad2772ecd3b6d3c8f7e6e1daa24c04c9b1a2d"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "2.0.0"
   flutter_launcher_icons:
     dependency: "direct dev"
     description:
@@ -466,10 +466,10 @@ packages:
     dependency: transitive
     description:
       name: get_it
-      sha256: "2c120112e34bbd5f4ce2ca1ad3076a5b2068eb1e48aae8dd7b717b26cdd38543"
+      sha256: "368c1abda38084fb5c0c280bfdd5e4ddb010eaa022ff3e953e8b503f7b334b7d"
       url: "https://pub.dev"
     source: hosted
-    version: "9.1.1"
+    version: "9.1.0"
   gsettings:
     dependency: transitive
     description:
@@ -586,10 +586,10 @@ packages:
     dependency: transitive
     description:
       name: listen_it
-      sha256: "461f46cc86e9c3be0d679f1ee4d94c8893c0a9ce42d0aad4474fe7e154e62c4a"
+      sha256: "516bfd486ca6fcb5d73c5640ed59e3c281a2871ee11863ffd4713e581b11c8d0"
       url: "https://pub.dev"
     source: hosted
-    version: "5.3.4"
+    version: "5.3.3"
   local_notifier:
     dependency: "direct main"
     description:
@@ -1355,10 +1355,10 @@ packages:
     dependency: transitive
     description:
       name: watch_it
-      sha256: "561910e534af41dda7c9bce2eca2b3d65c48aa88b6570964b3dcb29fb1cc6dc3"
+      sha256: "22ca46b22da37d3c0b8d1ffb59d1f98715509e4ff47312de36459d76f20478ec"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "2.2.0"
   web:
     dependency: transitive
     description:
