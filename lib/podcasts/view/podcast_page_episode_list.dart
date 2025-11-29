@@ -3,6 +3,7 @@ import 'package:flutter_it/flutter_it.dart';
 
 import '../../collection/collection_manager.dart';
 import '../../player/player_manager.dart';
+import '../podcast_library_service.dart';
 import '../podcast_manager.dart';
 import 'episode_tile.dart';
 
@@ -38,8 +39,17 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
           itemBuilder: (context, index) => EpisodeTile(
             episode: episodes.elementAt(index),
             podcastImage: episodes.elementAt(index).albumArtUrl,
-            setPlaylist: () =>
-                di<PlayerManager>().setPlaylist(episodes, index: index),
+            setPlaylist: () => di<PlayerManager>().setPlaylist(
+              episodes.map((e) {
+                if (di<PodcastLibraryService>().getDownload(e.url) != null) {
+                  return e.copyWithX(
+                    resource: di<PodcastLibraryService>().getDownload(e.url)!,
+                  );
+                }
+                return e;
+              }).toList(),
+              index: index,
+            ),
           ),
         );
       },
