@@ -1,3 +1,4 @@
+import 'package:blur/blur.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,7 @@ import '../../common/view/sliver_sticky_panel.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../player/data/station_media.dart';
-import '../../player/player_manager.dart';
+import '../../player/view/play_media_button.dart';
 import '../../player/view/player_view.dart';
 import '../../search/copy_to_clipboard_content.dart';
 import '../radio_service.dart';
@@ -43,32 +44,45 @@ class StationPage extends StatelessWidget {
     body: CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(kBigPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: SizedBox(
-                    height: 200,
-                    width: 200,
-                    child: SafeNetworkImage(
-                      url: stationMedia.artUrl,
-                      fallBackIcon: const Icon(Icons.radio),
-                      filterQuality: FilterQuality.medium,
-                      fit: BoxFit.cover,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (stationMedia.artUrl != null)
+                      Blur(
+                        blur: 20,
+                        colorOpacity: 0.7,
+                        blurColor: const Color.fromARGB(255, 48, 48, 48),
+                        child: SafeNetworkImage(
+                          height: 350,
+                          width: double.infinity,
+                          url: stationMedia.artUrl,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SafeNetworkImage(
+                        height: 250,
+                        width: 250,
+                        url: stationMedia.artUrl,
+                        fit: BoxFit.fitHeight,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: kBigPadding),
-                Text(
-                  stationMedia.title,
-                  style: context.theme.textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: kBigPadding),
+              Text(
+                stationMedia.title,
+                style: context.theme.textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
         SliverStickyPanel(
@@ -77,15 +91,7 @@ class StationPage extends StatelessWidget {
             spacing: kSmallPadding,
             children: [
               RadioBrowserStationStarButton(media: stationMedia),
-              IconButton(
-                style: IconButton.styleFrom(
-                  shape: const CircleBorder(),
-                  backgroundColor: context.theme.colorScheme.primaryContainer,
-                ),
-                onPressed: () =>
-                    di<PlayerManager>().setPlaylist([stationMedia]),
-                icon: const Icon(Icons.play_arrow),
-              ),
+              PlayMediasButton(medias: [stationMedia]),
               IconButton(
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
