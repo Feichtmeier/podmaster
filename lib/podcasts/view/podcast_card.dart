@@ -6,6 +6,7 @@ import '../../common/view/safe_network_image.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
+import '../data/podcast_metadata.dart';
 import 'podcast_card_play_button.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
@@ -36,7 +37,10 @@ class _PodcastCardState extends State<PodcastCard> {
       onHover: (hovering) => setState(() => _hovered = hovering),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => PodcastPage(podcastItem: widget.podcastItem),
+          builder: (context) => PodcastPage(
+            feedUrl: widget.podcastItem.feedUrl!,
+            podcastItem: widget.podcastItem,
+          ),
         ),
       ),
       child: SizedBox(
@@ -94,7 +98,15 @@ class _PodcastCardState extends State<PodcastCard> {
                                 podcastItem: widget.podcastItem,
                               ),
                               PodcastFavoriteButton.floating(
-                                podcastItem: widget.podcastItem,
+                                metadata: PodcastMetadata(
+                                  feedUrl: widget.podcastItem.feedUrl!,
+                                  imageUrl: widget.podcastItem.bestArtworkUrl,
+                                  name: widget.podcastItem.collectionName,
+                                  artist: widget.podcastItem.artistName,
+                                  genreList: widget.podcastItem.genre
+                                      ?.map((e) => e.name)
+                                      .toList(),
+                                ),
                               ),
                             ],
                           )

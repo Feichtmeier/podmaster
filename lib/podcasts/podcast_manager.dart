@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -11,6 +12,7 @@ import '../extensions/string_x.dart';
 import '../notifications/notifications_service.dart';
 import '../player/data/episode_media.dart';
 import '../search/search_manager.dart';
+import 'data/podcast_metadata.dart';
 import 'download_service.dart';
 import 'podcast_library_service.dart';
 import 'podcast_service.dart';
@@ -49,11 +51,22 @@ class PodcastManager {
         .debounce(const Duration(milliseconds: 500))
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
-    getSubscribedPodcastsCommand = Command.createSync(
-      (filterText) =>
-          podcastLibraryService.getFilteredPodcastsItems(filterText),
-      initialValue: [],
-    );
+    getSubscribedPodcastsCommand = Command.createSync((filterText) {
+      final items = podcastLibraryService.getFilteredPodcastsItems(filterText);
+
+      return items
+          .map(
+            (e) => Item(
+              feedUrl: e.feedUrl,
+              artworkUrl: podcastLibraryService.getSubscribedPodcastImage(
+                e.feedUrl,
+              ),
+              collectionName: e.name,
+              artistName: e.artist,
+            ),
+          )
+          .toList();
+    }, initialValue: []);
 
     collectionManager.textChangedCommand.listen(
       (filterText, sub) => getSubscribedPodcastsCommand.run(filterText),
@@ -69,30 +82,61 @@ class PodcastManager {
   final DownloadService _downloadService;
   final NotificationsService _notificationsService;
 
+  final showInfo = ValueNotifier(false);
+
   // Map of feedUrl to fetch episodes command
   final _fetchEpisodeMediaCommands =
-      <String, Command<Item, List<EpisodeMedia>>>{};
+      <String, Command<String, List<EpisodeMedia>>>{};
 
-  Command<Item, List<EpisodeMedia>> _getFetchEpisodesCommand(Item item) {
-    if (item.feedUrl == null) {
-      throw ArgumentError('Item must have a feedUrl to fetch episodes');
-    }
+  Command<String, List<EpisodeMedia>> _getFetchEpisodesCommand(String feedUrl) {
     return _fetchEpisodeMediaCommands.putIfAbsent(
-      item.feedUrl!,
-      () => Command.createAsync<Item, List<EpisodeMedia>>(
-        (item) async => findEpisodes(item: item),
+      feedUrl,
+      () => Command.createAsync<String, List<EpisodeMedia>>(
+        (feedUrl) async => findEpisodes(feedUrl: feedUrl),
         initialValue: [],
       ),
     );
   }
 
-  Command<Item, List<EpisodeMedia>> runFetchEpisodesCommand(Item item) {
-    _getFetchEpisodesCommand(item).run(item);
-    return _getFetchEpisodesCommand(item);
+  Command<String, List<EpisodeMedia>> runFetchEpisodesCommand(String feedUrl) {
+    _getFetchEpisodesCommand(feedUrl).run(feedUrl);
+    return _getFetchEpisodesCommand(feedUrl);
   }
 
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<String?, List<Item>> getSubscribedPodcastsCommand;
+  late Command<GetMetadataCapsule, PodcastMetadata?> getPodcastMetadataCommand;
+
+  final _metaDataCommands =
+      <GetMetadataCapsule, Command<GetMetadataCapsule, PodcastMetadata?>>{};
+  Command<GetMetadataCapsule, PodcastMetadata?> getAndRunMetadataCommand(
+    GetMetadataCapsule capsule,
+  ) {
+    return _metaDataCommands.putIfAbsent(
+      capsule,
+      () => _createGetPodcastMetadataCommand(),
+    )..run(capsule);
+  }
+
+  Command<GetMetadataCapsule, PodcastMetadata?>
+  _createGetPodcastMetadataCommand() =>
+      Command.createAsync<GetMetadataCapsule, PodcastMetadata?>((
+        capsule,
+      ) async {
+        if (capsule.item != null) {
+          return PodcastMetadata.fromItem(capsule.item!);
+        } else if (_podcastLibraryService.isPodcastSubscribed(
+          capsule.feedUrl,
+        )) {
+          return _podcastLibraryService.getSubScribedPodcastMetadata(
+            capsule.feedUrl,
+          );
+        } else {
+          throw ArgumentError(
+            'Cannot get metadata for unsubscribed podcast without item',
+          );
+        }
+      }, initialValue: null);
 
   final _downloadCommands = <EpisodeMedia, Command<void, void>>{};
   final activeDownloads = ListNotifier<EpisodeMedia>();
@@ -136,8 +180,8 @@ class PodcastManager {
     return command;
   }
 
-  Future<void> addPodcast(Item item) async {
-    await _podcastLibraryService.addPodcast(item);
+  Future<void> addPodcast(PodcastMetadata metadata) async {
+    await _podcastLibraryService.addPodcast(metadata);
     getSubscribedPodcastsCommand.run();
   }
 
@@ -239,4 +283,11 @@ class PodcastManager {
       await _notificationsService.notify(message: msg);
     }
   }
+}
+
+class GetMetadataCapsule {
+  GetMetadataCapsule({required this.feedUrl, this.item});
+
+  final String feedUrl;
+  final Item? item;
 }

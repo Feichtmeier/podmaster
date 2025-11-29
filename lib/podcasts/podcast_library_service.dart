@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:collection/collection.dart';
-import 'package:podcast_search/podcast_search.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../extensions/date_time_x.dart';
 import '../extensions/shared_preferences_x.dart';
+import 'data/podcast_metadata.dart';
 
 class PodcastLibraryService {
   PodcastLibraryService({required SharedPreferences sharedPreferences})
@@ -40,12 +39,14 @@ class PodcastLibraryService {
     }).toSet();
   }
 
-  List<Item> getFilteredPodcastsItems(String? filterText) {
+  List<PodcastMetadata> getFilteredPodcastsItems(String? filterText) {
     final filteredFeedUrls = _getFilteredPodcasts(filterText);
-    final result = <Item>[];
+    final result = <PodcastMetadata>[];
     for (final feedUrl in filteredFeedUrls) {
-      final metadata = getPodcastItem(feedUrl);
-      result.add(metadata);
+      final metadata = getSubScribedPodcastMetadata(feedUrl);
+      if (metadata != null) {
+        result.add(metadata);
+      }
     }
     return result;
   }
@@ -59,22 +60,22 @@ class PodcastLibraryService {
   // Adding and removing Podcasts
   // ------------------
 
-  Future<void> addPodcast(Item item) async {
-    if (isPodcastSubscribed(item.feedUrl)) return;
-    await _addPodcastMetadata(item);
+  Future<void> addPodcast(PodcastMetadata metadata) async {
+    if (isPodcastSubscribed(metadata.feedUrl)) return;
+    await _addPodcastMetadata(metadata);
     await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, [
       ...List<String>.from(_podcasts),
-      item.feedUrl!,
+      metadata.feedUrl,
     ]);
   }
 
-  Future<void> addPodcasts(List<Item> metadata) async {
+  Future<void> addPodcasts(List<PodcastMetadata> metadata) async {
     if (metadata.isEmpty) return;
     final newList = List<String>.from(_podcasts);
     for (var p in metadata) {
-      if (p.feedUrl != null && !newList.contains(p.feedUrl)) {
+      if (!newList.contains(p.feedUrl)) {
         await _addPodcastMetadata(p);
-        newList.add(p.feedUrl!);
+        newList.add(p.feedUrl);
       }
     }
     await _sharedPreferences.setStringList(SPKeys.podcastFeedUrls, newList);
@@ -96,49 +97,41 @@ class PodcastLibraryService {
 
   // Podcast Metadata
   // ------------------
-  Future<void> _addPodcastMetadata(Item item) async {
-    if (item.feedUrl == null) {
-      return;
-    }
-    if (item.bestArtworkUrl != null) {
+  Future<void> _addPodcastMetadata(PodcastMetadata item) async {
+    if (item.imageUrl != null) {
       addSubscribedPodcastImage(
-        feedUrl: item.feedUrl!,
-        imageUrl: item.bestArtworkUrl!,
+        feedUrl: item.feedUrl,
+        imageUrl: item.imageUrl!,
       );
     }
-    if (item.collectionName != null) {
-      addSubscribedPodcastName(
-        feedUrl: item.feedUrl!,
-        name: item.collectionName!,
-      );
+    if (item.name != null) {
+      addSubscribedPodcastName(feedUrl: item.feedUrl, name: item.name!);
     }
-    if (item.artistName != null) {
-      addSubscribedPodcastArtist(
-        feedUrl: item.feedUrl!,
-        artist: item.artistName!,
-      );
+    if (item.artist != null) {
+      addSubscribedPodcastArtist(feedUrl: item.feedUrl, artist: item.artist!);
     }
-    if (item.genre != null) {
+    if (item.genreList != null) {
       addSubscribedPodcastGenreList(
-        feedUrl: item.feedUrl!,
-        genreList: item.genre!.map((g) => g.name).toList(),
+        feedUrl: item.feedUrl,
+        genreList: item.genreList!,
       );
     }
     await addPodcastLastUpdated(
-      feedUrl: item.feedUrl!,
+      feedUrl: item.feedUrl,
       timestamp: DateTime.now().podcastTimeStamp,
     );
   }
 
-  Item getPodcastItem(String feedUrl) => Item(
-    feedUrl: feedUrl,
-    artworkUrl: getSubscribedPodcastImage(feedUrl),
-    collectionName: getSubscribedPodcastName(feedUrl),
-    artistName: getSubscribedPodcastArtist(feedUrl),
-    genre: getSubScribedPodcastGenreList(
-      feedUrl,
-    )?.mapIndexed((i, g) => Genre(i, g)).toList(),
-  );
+  PodcastMetadata? getSubScribedPodcastMetadata(String feedUrl) =>
+      isPodcastSubscribed(feedUrl)
+      ? PodcastMetadata(
+          feedUrl: feedUrl,
+          imageUrl: getSubscribedPodcastImage(feedUrl),
+          name: getSubscribedPodcastName(feedUrl),
+          artist: getSubscribedPodcastArtist(feedUrl),
+          genreList: getSubScribedPodcastGenreList(feedUrl),
+        )
+      : null;
 
   // Image URL
   String? getSubscribedPodcastImage(String feedUrl) =>

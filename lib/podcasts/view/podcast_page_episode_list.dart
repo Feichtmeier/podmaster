@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
-import 'package:podcast_search/podcast_search.dart';
 
 import '../../collection/collection_manager.dart';
 import '../../player/player_manager.dart';
@@ -8,9 +7,9 @@ import '../podcast_manager.dart';
 import 'episode_tile.dart';
 
 class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
-  const PodcastPageEpisodeList({super.key, required this.podcastItem});
+  const PodcastPageEpisodeList({super.key, required this.feedUrl});
 
-  final Item podcastItem;
+  final String feedUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +18,7 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
     );
 
     return watchValue(
-      (PodcastManager m) => m.runFetchEpisodesCommand(podcastItem).results,
+      (PodcastManager m) => m.runFetchEpisodesCommand(feedUrl).results,
     ).toWidget(
       onData: (episodesX, param) {
         final episodes = downloadsOnly
@@ -38,7 +37,7 @@ class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
           itemCount: episodes.length,
           itemBuilder: (context, index) => EpisodeTile(
             episode: episodes.elementAt(index),
-            podcastImage: podcastItem.bestArtworkUrl,
+            podcastImage: episodes.elementAt(index).albumArtUrl,
             setPlaylist: () =>
                 di<PlayerManager>().setPlaylist(episodes, index: index),
           ),
