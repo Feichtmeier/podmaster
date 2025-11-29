@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:collection/collection.dart';
-import 'package:podcast_search/podcast_search.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../extensions/date_time_x.dart';
@@ -16,7 +14,7 @@ class PodcastLibraryService {
 
   final SharedPreferences _sharedPreferences;
 
-  // This stream is currently used for updates and feeds with downloads
+  // This stream is currently used for downloads
   final _propertiesChangedController = StreamController<bool>.broadcast();
   Stream<bool> get propertiesChanged => _propertiesChangedController.stream;
   Future<void> notify(bool value) async =>
@@ -41,17 +39,20 @@ class PodcastLibraryService {
     }).toSet();
   }
 
-  List<Item> getFilteredPodcastItems(String? filterText) {
+  List<PodcastMetadata> getFilteredPodcastsItems(String? filterText) {
     final filteredFeedUrls = _getFilteredPodcasts(filterText);
-    final result = <Item>[];
+    final result = <PodcastMetadata>[];
     for (final feedUrl in filteredFeedUrls) {
-      final metadata = getPodcastItem(feedUrl);
-      result.add(metadata);
+      final metadata = getSubScribedPodcastMetadata(feedUrl);
+      if (metadata != null) {
+        result.add(metadata);
+      }
     }
     return result;
   }
 
-  bool isPodcastSubscribed(String feedUrl) => _podcasts.contains(feedUrl);
+  bool isPodcastSubscribed(String? feedUrl) =>
+      feedUrl != null && _podcasts.contains(feedUrl);
   List<String> get podcastFeedUrls => _podcasts.toList();
   Set<String> get podcasts => _podcasts;
   int get podcastsLength => _podcasts.length;
@@ -96,45 +97,41 @@ class PodcastLibraryService {
 
   // Podcast Metadata
   // ------------------
-  Future<void> _addPodcastMetadata(PodcastMetadata metadata) async {
-    if (metadata.imageUrl != null) {
+  Future<void> _addPodcastMetadata(PodcastMetadata item) async {
+    if (item.imageUrl != null) {
       addSubscribedPodcastImage(
-        feedUrl: metadata.feedUrl,
-        imageUrl: metadata.imageUrl!,
+        feedUrl: item.feedUrl,
+        imageUrl: item.imageUrl!,
       );
     }
-    if (metadata.name != null) {
-      addSubscribedPodcastName(feedUrl: metadata.feedUrl, name: metadata.name!);
+    if (item.name != null) {
+      addSubscribedPodcastName(feedUrl: item.feedUrl, name: item.name!);
     }
-    if (metadata.artist != null) {
-      addSubscribedPodcastArtist(
-        feedUrl: metadata.feedUrl,
-        artist: metadata.artist!,
-      );
+    if (item.artist != null) {
+      addSubscribedPodcastArtist(feedUrl: item.feedUrl, artist: item.artist!);
     }
-    if (metadata.genreList != null) {
+    if (item.genreList != null) {
       addSubscribedPodcastGenreList(
-        feedUrl: metadata.feedUrl,
-        genreList: metadata.genreList!,
+        feedUrl: item.feedUrl,
+        genreList: item.genreList!,
       );
     }
     await addPodcastLastUpdated(
-      feedUrl: metadata.feedUrl,
+      feedUrl: item.feedUrl,
       timestamp: DateTime.now().podcastTimeStamp,
     );
   }
 
-  Item getPodcastItem(String feedUrl) => Item(
-    feedUrl: feedUrl,
-    artworkUrl: getSubscribedPodcastImage(feedUrl),
-    collectionName: getSubscribedPodcastName(feedUrl),
-    artistName: getSubscribedPodcastArtist(feedUrl),
-    genre:
-        getSubScribedPodcastGenreList(
-          feedUrl,
-        )?.mapIndexed((i, e) => Genre(i, e)).toList() ??
-        <Genre>[],
-  );
+  PodcastMetadata? getSubScribedPodcastMetadata(String feedUrl) =>
+      isPodcastSubscribed(feedUrl)
+      ? PodcastMetadata(
+          feedUrl: feedUrl,
+          imageUrl: getSubscribedPodcastImage(feedUrl),
+          name: getSubscribedPodcastName(feedUrl),
+          artist: getSubscribedPodcastArtist(feedUrl),
+          genreList: getSubScribedPodcastGenreList(feedUrl),
+        )
+      : null;
 
   // Image URL
   String? getSubscribedPodcastImage(String feedUrl) =>

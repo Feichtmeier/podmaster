@@ -6,6 +6,7 @@ class PodcastMetadata {
     this.imageUrl,
     this.name,
     this.artist,
+    this.description,
     this.genreList,
   });
 
@@ -13,9 +14,10 @@ class PodcastMetadata {
   final String? imageUrl;
   final String? name;
   final String? artist;
+  final String? description;
   final List<String>? genreList;
 
-  factory PodcastMetadata.fromItem(Item item) {
+  factory PodcastMetadata.fromItem(Item item, {String? description}) {
     if (item.feedUrl == null) {
       throw ArgumentError('Item must have a valid, non null feedUrl!');
     }
@@ -24,7 +26,7 @@ class PodcastMetadata {
       name: item.collectionName,
       artist: item.artistName,
       imageUrl: item.bestArtworkUrl,
-      genreList: item.genre?.map((e) => e.name).toList() ?? <String>[],
+      description: description,
     );
   }
 }

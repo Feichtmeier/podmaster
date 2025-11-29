@@ -7,13 +7,17 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import '../common/logging.dart';
 import '../extensions/color_x.dart';
+import '../podcasts/podcast_library_service.dart';
 import 'data/episode_media.dart';
 import 'data/unique_media.dart';
 import 'view/player_view_state.dart';
 
 class PlayerManager extends BaseAudioHandler with SeekHandler {
-  PlayerManager({required VideoController controller})
-    : _controller = controller {
+  PlayerManager({
+    required VideoController controller,
+    required PodcastLibraryService podcastLibraryService,
+  }) : _controller = controller,
+       _podcastLibraryService = podcastLibraryService {
     playbackState.add(
       PlaybackState(
         playing: false,
@@ -41,6 +45,7 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
   }
 
   final VideoController _controller;
+  final PodcastLibraryService _podcastLibraryService;
   VideoController get videoController => _controller;
 
   final playerViewState = ValueNotifier<PlayerViewState>(
@@ -235,16 +240,21 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
   }) async {
     if (mediaList.isEmpty) return;
     updateState(resetRemoteSource: true);
-
-    // Use download path if available for episodes
-    final resolvedList = mediaList.map((media) {
-      if (media is EpisodeMedia && media.downloadPath != null) {
-        return media.copyWithX(resource: media.downloadPath!);
-      }
-      return media;
-    }).toList();
-
-    await _player.open(Playlist(resolvedList, index: index), play: play);
+    await _player.open(
+      Playlist(
+        mediaList.map((e) {
+          if (e is EpisodeMedia &&
+              _podcastLibraryService.getDownload(e.url) != null) {
+            return e.copyWithX(
+              resource: _podcastLibraryService.getDownload(e.url)!,
+            );
+          }
+          return e;
+        }).toList(),
+        index: index,
+      ),
+      play: play,
+    );
   }
 
   Future<void> addToPlaylist(UniqueMedia media) async => _player.add(media);

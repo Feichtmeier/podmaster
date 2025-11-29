@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_it/flutter_it.dart';
 import 'package:phoenix_theme/phoenix_theme.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -7,12 +6,12 @@ import '../../common/view/safe_network_image.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
-import '../podcast_manager.dart';
+import '../data/podcast_metadata.dart';
 import 'podcast_card_play_button.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
 
-class PodcastCard extends StatefulWidget with WatchItStatefulWidgetMixin {
+class PodcastCard extends StatefulWidget {
   const PodcastCard({super.key, required this.podcastItem});
 
   final Item podcastItem;
@@ -26,28 +25,6 @@ class _PodcastCardState extends State<PodcastCard> {
 
   @override
   Widget build(BuildContext context) {
-    final proxy = createOnce(
-      () => di<PodcastManager>().getOrCreateProxy(widget.podcastItem),
-    );
-
-    registerHandler(
-      target: proxy.playEpisodesCommand.results,
-      handler: (context, CommandResult<int, void>? result, cancel) {
-        if (result == null) return;
-
-        if (result.isRunning) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const Center(child: CircularProgressIndicator()),
-          );
-        } else if (result.isSuccess) {
-          Navigator.of(context).pop();
-        } else if (result.hasError) {
-          Navigator.of(context).pop();
-        }
-      },
-    );
     final theme = context.theme;
     final isLight = theme.colorScheme.isLight;
     const borderRadiusGeometry = BorderRadiusGeometry.only(
@@ -60,7 +37,10 @@ class _PodcastCardState extends State<PodcastCard> {
       onHover: (hovering) => setState(() => _hovered = hovering),
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => PodcastPage(podcastItem: widget.podcastItem),
+          builder: (context) => PodcastPage(
+            feedUrl: widget.podcastItem.feedUrl!,
+            podcastItem: widget.podcastItem,
+          ),
         ),
       ),
       child: SizedBox(
@@ -118,7 +98,15 @@ class _PodcastCardState extends State<PodcastCard> {
                                 podcastItem: widget.podcastItem,
                               ),
                               PodcastFavoriteButton.floating(
-                                podcastItem: widget.podcastItem,
+                                metadata: PodcastMetadata(
+                                  feedUrl: widget.podcastItem.feedUrl!,
+                                  imageUrl: widget.podcastItem.bestArtworkUrl,
+                                  name: widget.podcastItem.collectionName,
+                                  artist: widget.podcastItem.artistName,
+                                  genreList: widget.podcastItem.genre
+                                      ?.map((e) => e.name)
+                                      .toList(),
+                                ),
                               ),
                             ],
                           )

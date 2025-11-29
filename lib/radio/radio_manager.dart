@@ -15,13 +15,13 @@ class RadioManager {
   }) : _radioLibraryService = radioLibraryService,
        _radioService = radioService,
        _collectionManager = collectionManager {
-    getFavoriteStationsCommand = Command.createAsync(
+    favoriteStationsCommand = Command.createAsync(
       _loadFavorites,
       initialValue: [],
     );
 
     _collectionManager.textChangedCommand.listen(
-      (filterText, sub) => getFavoriteStationsCommand.run(filterText),
+      (filterText, sub) => favoriteStationsCommand.run(filterText),
     );
 
     searchManager.textChangedCommand
@@ -33,83 +33,14 @@ class RadioManager {
       initialValue: [],
     );
 
-    toggleFavoriteStationCommand =
-        Command.createUndoableNoResult<
-          String,
-          ({bool wasAdd, StationMedia? media})
-        >(
-          (stationUuid, stack) async {
-            final currentList = getFavoriteStationsCommand.value;
-            final isFavorite = currentList.any((s) => s.id == stationUuid);
-
-            // Store operation info for undo
-            if (isFavorite) {
-              // Removing: store the station being removed
-              final stationToRemove = currentList.firstWhere(
-                (s) => s.id == stationUuid,
-              );
-              stack.push((wasAdd: false, media: stationToRemove));
-
-              // Optimistic: remove from list
-              getFavoriteStationsCommand.value = currentList
-                  .where((s) => s.id != stationUuid)
-                  .toList();
-            } else {
-              // Adding: try to get cached media for optimistic update
-              final cachedStation = StationMedia.getCachedStationMedia(
-                stationUuid,
-              );
-              stack.push((wasAdd: true, media: cachedStation));
-
-              // Optimistic: add if we have cached media
-              if (cachedStation != null) {
-                getFavoriteStationsCommand.value = [
-                  ...currentList,
-                  cachedStation,
-                ];
-              }
-            }
-
-            // Async persist
-            await (isFavorite
-                ? _radioLibraryService.removeFavoriteStation(stationUuid)
-                : _radioLibraryService.addFavoriteStation(stationUuid));
-
-            // Refresh to ensure consistency (fetches from network if needed)
-            getFavoriteStationsCommand.run();
-          },
-          undo: (stack, reason) async {
-            final undoData = stack.pop();
-            final currentList = getFavoriteStationsCommand.value;
-
-            if (undoData.wasAdd) {
-              // Was an add, so remove it
-              if (undoData.media != null) {
-                getFavoriteStationsCommand.value = currentList
-                    .where((s) => s.id != undoData.media!.id)
-                    .toList();
-              }
-            } else {
-              // Was a remove, so add it back
-              if (undoData.media != null) {
-                getFavoriteStationsCommand.value = [
-                  ...currentList,
-                  undoData.media!,
-                ];
-              }
-            }
-          },
-        );
-
-    getFavoriteStationsCommand.run();
+    favoriteStationsCommand.run();
   }
 
   final RadioLibraryService _radioLibraryService;
   final CollectionManager _collectionManager;
   final RadioService _radioService;
-  late Command<String?, List<StationMedia>> getFavoriteStationsCommand;
+  late Command<String?, List<StationMedia>> favoriteStationsCommand;
   late Command<String?, List<StationMedia>> updateSearchCommand;
-  late final Command<String, void> toggleFavoriteStationCommand;
 
   Future<List<StationMedia>> _loadMedia({
     String? country,
@@ -158,11 +89,11 @@ class RadioManager {
 
   Future<void> addFavoriteStation(String stationUuid) async {
     await _radioLibraryService.addFavoriteStation(stationUuid);
-    getFavoriteStationsCommand.run();
+    favoriteStationsCommand.run();
   }
 
   Future<void> removeFavoriteStation(String stationUuid) async {
     await _radioLibraryService.removeFavoriteStation(stationUuid);
-    getFavoriteStationsCommand.run();
+    favoriteStationsCommand.run();
   }
 }

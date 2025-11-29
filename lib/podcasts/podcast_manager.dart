@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_it/flutter_it.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -5,12 +7,13 @@ import '../collection/collection_manager.dart';
 import '../common/logging.dart';
 import '../extensions/country_x.dart';
 import '../extensions/date_time_x.dart';
+import '../extensions/podcast_x.dart';
 import '../extensions/string_x.dart';
 import '../notifications/notifications_service.dart';
 import '../player/data/episode_media.dart';
 import '../search/search_manager.dart';
 import 'data/podcast_metadata.dart';
-import 'data/podcast_proxy.dart';
+import 'download_service.dart';
 import 'podcast_library_service.dart';
 import 'podcast_service.dart';
 
@@ -22,11 +25,13 @@ import 'podcast_service.dart';
 class PodcastManager {
   PodcastManager({
     required PodcastService podcastService,
+    required DownloadService downloadService,
     required SearchManager searchManager,
     required CollectionManager collectionManager,
     required PodcastLibraryService podcastLibraryService,
     required NotificationsService notificationsService,
   }) : _podcastService = podcastService,
+       _downloadService = downloadService,
        _podcastLibraryService = podcastLibraryService,
        _notificationsService = notificationsService {
     Command.globalExceptionHandler = (e, s) {
@@ -46,86 +51,26 @@ class PodcastManager {
         .debounce(const Duration(milliseconds: 500))
         .listen((filterText, sub) => updateSearchCommand.run(filterText));
 
-    getSubscribedPodcastsCommand = Command.createSync(
-      (filterText) => podcastLibraryService.getFilteredPodcastItems(filterText),
-      initialValue: [],
-    );
+    getSubscribedPodcastsCommand = Command.createSync((filterText) {
+      final items = podcastLibraryService.getFilteredPodcastsItems(filterText);
+
+      return items
+          .map(
+            (e) => Item(
+              feedUrl: e.feedUrl,
+              artworkUrl: podcastLibraryService.getSubscribedPodcastImage(
+                e.feedUrl,
+              ),
+              collectionName: e.name,
+              artistName: e.artist,
+            ),
+          )
+          .toList();
+    }, initialValue: []);
 
     collectionManager.textChangedCommand.listen(
       (filterText, sub) => getSubscribedPodcastsCommand.run(filterText),
     );
-
-    checkForUpdatesCommand =
-        Command.createAsync<
-          ({String updateMessage, String Function(int) multiUpdateMessage}),
-          void
-        >((params) async {
-          final updatedProxies = <PodcastProxy>[];
-
-          // Check all subscribed podcasts for updates
-          for (final feedUrl in _podcastLibraryService.podcasts) {
-            final proxy = getOrCreateProxy(Item(feedUrl: feedUrl));
-            final hasUpdate = await _checkForUpdate(proxy);
-            if (hasUpdate) {
-              updatedProxies.add(proxy);
-            }
-          }
-
-          if (updatedProxies.isNotEmpty) {
-            final msg = updatedProxies.length == 1
-                ? '${params.updateMessage} ${updatedProxies.first.title ?? ''}'
-                : params.multiUpdateMessage(updatedProxies.length);
-            await _notificationsService.notify(message: msg);
-          }
-        }, initialValue: null);
-
-    togglePodcastSubscriptionCommand =
-        Command.createUndoableNoResult<Item, ({bool wasAdd, Item item})>(
-          (item, stack) async {
-            final feedUrl = item.feedUrl;
-            if (feedUrl == null) return;
-
-            final currentList = getSubscribedPodcastsCommand.value;
-            final isSubscribed = currentList.any((p) => p.feedUrl == feedUrl);
-
-            // Store operation info for undo
-            stack.push((wasAdd: !isSubscribed, item: item));
-
-            // Optimistic update: modify list directly
-            if (isSubscribed) {
-              getSubscribedPodcastsCommand.value = currentList
-                  .where((p) => p.feedUrl != feedUrl)
-                  .toList();
-            } else {
-              getSubscribedPodcastsCommand.value = [...currentList, item];
-            }
-
-            // Async persist
-            if (isSubscribed) {
-              await removePodcast(item);
-            } else {
-              await addPodcast(PodcastMetadata.fromItem(item));
-            }
-          },
-          undo: (stack, reason) async {
-            final undoData = stack.pop();
-            final currentList = getSubscribedPodcastsCommand.value;
-
-            if (undoData.wasAdd) {
-              // Was an add, so remove it
-              getSubscribedPodcastsCommand.value = currentList
-                  .where((p) => p.feedUrl != undoData.item.feedUrl)
-                  .toList();
-            } else {
-              // Was a remove, so add it back
-              getSubscribedPodcastsCommand.value = [
-                ...currentList,
-                undoData.item,
-              ];
-            }
-          },
-          undoOnExecutionFailure: true,
-        );
 
     getSubscribedPodcastsCommand.run(null);
 
@@ -134,95 +79,215 @@ class PodcastManager {
 
   final PodcastService _podcastService;
   final PodcastLibraryService _podcastLibraryService;
+  final DownloadService _downloadService;
   final NotificationsService _notificationsService;
 
-  // Track episodes currently downloading
-  final activeDownloads = ListNotifier<EpisodeMedia>();
+  final showInfo = ValueNotifier(false);
 
-  /// Registers an episode as actively downloading.
-  /// Called by EpisodeMedia.downloadCommand when download starts.
-  void registerActiveDownload(EpisodeMedia episode) {
-    activeDownloads.add(episode);
-  }
+  // Map of feedUrl to fetch episodes command
+  final _fetchEpisodeMediaCommands =
+      <String, Command<String, List<EpisodeMedia>>>{};
 
-  /// Unregisters an episode from active downloads.
-  /// Called by EpisodeMedia.downloadCommand on error.
-  void unregisterActiveDownload(EpisodeMedia episode) {
-    activeDownloads.remove(episode);
-  }
-
-  // Proxy cache - each podcast owns its fetchEpisodesCommand
-  final _proxyCache = <String, PodcastProxy>{};
-
-  /// Gets or creates a PodcastProxy for the given Item.
-  /// The proxy owns the fetchEpisodesCommand.
-  PodcastProxy getOrCreateProxy(Item item) {
-    return _proxyCache.putIfAbsent(
-      item.feedUrl!,
-      () => PodcastProxy(item: item, podcastService: _podcastService),
-    );
-  }
-
-  /// Checks a single podcast for updates. Returns true if updated.
-  Future<bool> _checkForUpdate(PodcastProxy proxy) async {
-    final feedUrl = proxy.feedUrl;
-    final storedTimeStamp = _podcastLibraryService.getPodcastLastUpdated(
+  Command<String, List<EpisodeMedia>> _getFetchEpisodesCommand(String feedUrl) {
+    return _fetchEpisodeMediaCommands.putIfAbsent(
       feedUrl,
+      () => Command.createAsync<String, List<EpisodeMedia>>(
+        (feedUrl) async => findEpisodes(feedUrl: feedUrl),
+        initialValue: [],
+      ),
     );
-    DateTime? feedLastUpdated;
+  }
 
-    try {
-      feedLastUpdated = await Feed.feedLastUpdated(url: feedUrl);
-    } on Exception catch (e) {
-      printMessageInDebugMode(e);
-    }
-
-    printMessageInDebugMode('checking update for: ${proxy.title ?? feedUrl}');
-    printMessageInDebugMode(
-      'storedTimeStamp: ${storedTimeStamp ?? 'no timestamp'}',
-    );
-    printMessageInDebugMode(
-      'feedLastUpdated: ${feedLastUpdated?.podcastTimeStamp ?? 'no timestamp'}',
-    );
-
-    if (feedLastUpdated == null) return false;
-
-    await _podcastLibraryService.addPodcastLastUpdated(
-      feedUrl: feedUrl,
-      timestamp: feedLastUpdated.podcastTimeStamp,
-    );
-
-    if (storedTimeStamp != null &&
-        !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
-      // Clear cached episodes to force refresh
-      proxy.clearEpisodeCache();
-      await proxy.fetchEpisodesCommand.runAsync();
-
-      await _podcastLibraryService.addPodcastUpdate(feedUrl, feedLastUpdated);
-      return true; // Has update
-    }
-    return false;
+  Command<String, List<EpisodeMedia>> runFetchEpisodesCommand(String feedUrl) {
+    _getFetchEpisodesCommand(feedUrl).run(feedUrl);
+    return _getFetchEpisodesCommand(feedUrl);
   }
 
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<String?, List<Item>> getSubscribedPodcastsCommand;
-  late Command<
-    ({String updateMessage, String Function(int) multiUpdateMessage}),
-    void
-  >
-  checkForUpdatesCommand;
-  late final Command<Item, void> togglePodcastSubscriptionCommand;
+  late Command<GetMetadataCapsule, PodcastMetadata?> getPodcastMetadataCommand;
+
+  final _metaDataCommands =
+      <GetMetadataCapsule, Command<GetMetadataCapsule, PodcastMetadata?>>{};
+  Command<GetMetadataCapsule, PodcastMetadata?> getAndRunMetadataCommand(
+    GetMetadataCapsule capsule,
+  ) {
+    return _metaDataCommands.putIfAbsent(
+      capsule,
+      () => _createGetPodcastMetadataCommand(),
+    )..run(capsule);
+  }
+
+  Command<GetMetadataCapsule, PodcastMetadata?>
+  _createGetPodcastMetadataCommand() =>
+      Command.createAsync<GetMetadataCapsule, PodcastMetadata?>((
+        capsule,
+      ) async {
+        if (capsule.item != null) {
+          return PodcastMetadata.fromItem(capsule.item!);
+        } else if (_podcastLibraryService.isPodcastSubscribed(
+          capsule.feedUrl,
+        )) {
+          return _podcastLibraryService.getSubScribedPodcastMetadata(
+            capsule.feedUrl,
+          );
+        } else {
+          throw ArgumentError(
+            'Cannot get metadata for unsubscribed podcast without item',
+          );
+        }
+      }, initialValue: null);
+
+  final _downloadCommands = <EpisodeMedia, Command<void, void>>{};
+  final activeDownloads = ListNotifier<EpisodeMedia>();
+  final recentDownloads = ListNotifier<EpisodeMedia>();
+
+  Command<void, void> getDownloadCommand(EpisodeMedia media) =>
+      _downloadCommands.putIfAbsent(media, () => _createDownloadCommand(media));
+
+  Command<void, void> _createDownloadCommand(EpisodeMedia media) {
+    final command = Command.createAsyncNoParamNoResultWithProgress((
+      handle,
+    ) async {
+      activeDownloads.add(media);
+
+      final cancelToken = CancelToken();
+
+      handle.isCanceled.listen((canceled, subscription) {
+        if (canceled) {
+          activeDownloads.remove(media);
+          cancelToken.cancel();
+          subscription.cancel();
+        }
+      });
+
+      await _downloadService.download(
+        episode: media,
+        cancelToken: cancelToken,
+        onProgress: (received, total) {
+          handle.updateProgress(received / total);
+        },
+      );
+
+      activeDownloads.remove(media);
+      recentDownloads.add(media);
+    });
+
+    if (_podcastLibraryService.getDownload(media.url) != null) {
+      command.resetProgress(progress: 1.0);
+    }
+
+    return command;
+  }
 
   Future<void> addPodcast(PodcastMetadata metadata) async {
     await _podcastLibraryService.addPodcast(metadata);
     getSubscribedPodcastsCommand.run();
   }
 
-  Future<void> removePodcast(Item item) async {
-    await _podcastLibraryService.removePodcast(item.feedUrl!);
+  Future<void> removePodcast({required String feedUrl}) async {
+    await _podcastLibraryService.removePodcast(feedUrl);
     getSubscribedPodcastsCommand.run();
   }
 
-  String? getPodcastDescription(String? feedUrl) =>
-      _proxyCache[feedUrl]?.description;
+  final Map<String, Podcast> _podcastCache = {};
+  Podcast? getPodcastFromCache(String? feedUrl) => _podcastCache[feedUrl];
+  String? getPodcastDescriptionFromCache(String? feedUrl) =>
+      _podcastCache[feedUrl]?.description;
+
+  Future<List<EpisodeMedia>> findEpisodes({
+    Item? item,
+    String? feedUrl,
+    bool loadFromCache = true,
+  }) async {
+    if (item == null && item?.feedUrl == null && feedUrl == null) {
+      return Future.error(
+        ArgumentError('Either item or feedUrl must be provided'),
+      );
+    }
+
+    final url = feedUrl ?? item!.feedUrl!;
+
+    Podcast? podcast;
+    if (loadFromCache && _podcastCache.containsKey(url)) {
+      podcast = _podcastCache[url];
+    } else {
+      podcast = await _podcastService.fetchPodcast(item: item, feedUrl: url);
+      if (podcast != null) {
+        _podcastCache[url] = podcast;
+      }
+    }
+
+    if (podcast?.image != null) {
+      _podcastLibraryService.addSubscribedPodcastImage(
+        feedUrl: url,
+        imageUrl: podcast!.image!,
+      );
+    } else if (item?.bestArtworkUrl != null) {
+      _podcastLibraryService.addSubscribedPodcastImage(
+        feedUrl: url,
+        imageUrl: item!.bestArtworkUrl!,
+      );
+    }
+
+    return podcast?.toEpisodeMediaList(url, item) ?? [];
+  }
+
+  Future<void> checkForUpdates({
+    Set<String>? feedUrls,
+    required String updateMessage,
+    required String Function(int length) multiUpdateMessage,
+  }) async {
+    final newUpdateFeedUrls = <String>{};
+
+    for (final feedUrl in (feedUrls ?? _podcastLibraryService.podcasts)) {
+      final storedTimeStamp = _podcastLibraryService.getPodcastLastUpdated(
+        feedUrl,
+      );
+      DateTime? feedLastUpdated;
+      try {
+        feedLastUpdated = await Feed.feedLastUpdated(url: feedUrl);
+      } on Exception catch (e) {
+        printMessageInDebugMode(e);
+      }
+      final name = _podcastLibraryService.getSubscribedPodcastName(feedUrl);
+
+      printMessageInDebugMode('checking update for: ${name ?? feedUrl} ');
+      printMessageInDebugMode(
+        'storedTimeStamp: ${storedTimeStamp ?? 'no timestamp'}',
+      );
+      printMessageInDebugMode(
+        'feedLastUpdated: ${feedLastUpdated?.podcastTimeStamp ?? 'no timestamp'}',
+      );
+
+      if (feedLastUpdated == null) continue;
+
+      await _podcastLibraryService.addPodcastLastUpdated(
+        feedUrl: feedUrl,
+        timestamp: feedLastUpdated.podcastTimeStamp,
+      );
+
+      if (storedTimeStamp != null &&
+          !storedTimeStamp.isSamePodcastTimeStamp(feedLastUpdated)) {
+        await findEpisodes(feedUrl: feedUrl, loadFromCache: false);
+        await _podcastLibraryService.addPodcastUpdate(feedUrl, feedLastUpdated);
+
+        newUpdateFeedUrls.add(feedUrl);
+      }
+    }
+
+    if (newUpdateFeedUrls.isNotEmpty) {
+      final msg = newUpdateFeedUrls.length == 1
+          ? '$updateMessage${_podcastCache[newUpdateFeedUrls.first]?.title != null ? ' ${_podcastCache[newUpdateFeedUrls.first]?.title}' : ''}'
+          : multiUpdateMessage(newUpdateFeedUrls.length);
+      await _notificationsService.notify(message: msg);
+    }
+  }
+}
+
+class GetMetadataCapsule {
+  GetMetadataCapsule({required this.feedUrl, this.item});
+
+  final String feedUrl;
+  final Item? item;
 }

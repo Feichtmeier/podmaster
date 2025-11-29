@@ -4,6 +4,7 @@ import 'package:flutter_it/flutter_it.dart';
 import '../../extensions/build_context_x.dart';
 import '../../player/data/episode_media.dart';
 import '../data/podcast_metadata.dart';
+import '../download_service.dart';
 import '../podcast_manager.dart';
 
 class DownloadButton extends StatelessWidget {
@@ -29,11 +30,12 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
   @override
   Widget build(BuildContext context) {
     final theme = context.theme;
+    final downloadCommand = di<PodcastManager>().getDownloadCommand(episode);
 
-    final progress = watch(episode.downloadCommand.progress).value;
+    final progress = watch(downloadCommand.progress).value;
     final isDownloaded = progress == 1.0;
 
-    final isRunning = watch(episode.downloadCommand.isRunning).value;
+    final isRunning = watch(downloadCommand.isRunning).value;
 
     return IconButton(
       isSelected: isDownloaded,
@@ -46,9 +48,11 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
       ),
       onPressed: () {
         if (isDownloaded) {
-          episode.deleteDownloadCommand.run();
+          di<DownloadService>().deleteDownload(media: episode);
+          di<PodcastManager>().recentDownloads.remove(episode);
+          downloadCommand.resetProgress();
         } else if (isRunning) {
-          episode.downloadCommand.cancel();
+          downloadCommand.cancel();
         } else {
           // Add podcast to library before downloading
           di<PodcastManager>().addPodcast(
@@ -60,7 +64,7 @@ class _ProcessDownloadButton extends StatelessWidget with WatchItMixin {
               genreList: episode.genres,
             ),
           );
-          episode.downloadCommand.run();
+          downloadCommand.run();
         }
       },
       color: isDownloaded
@@ -77,12 +81,13 @@ class _DownloadProgress extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) {
-    final progress = watch(episode.downloadCommand.progress).value;
-    final isRunning = watch(episode.downloadCommand.isRunning).value;
+    final progress = watch(
+      di<PodcastManager>().getDownloadCommand(episode).progress,
+    ).value;
+    final isRunning = watch(
+      di<PodcastManager>().getDownloadCommand(episode).isRunning,
+    ).value;
 
-    // Show indeterminate spinner when running but no progress yet
-    // Show determinate progress when we have progress data
-    // Hide when completed (progress == 1.0) or not running
     final showSpinner = isRunning || (progress > 0 && progress < 1.0);
 
     return SizedBox.square(

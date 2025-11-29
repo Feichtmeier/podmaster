@@ -6,8 +6,10 @@ import '../../extensions/build_context_x.dart';
 import '../../extensions/duration_x.dart';
 import '../../radio/view/radio_browser_station_star_button.dart';
 import '../../search/copy_to_clipboard_content.dart';
+import '../data/episode_media.dart';
 import '../data/station_media.dart';
 import '../player_manager.dart';
+import 'player_podcast_favorite_button.dart';
 
 class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
   const PlayerTrackInfo({
@@ -31,6 +33,7 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
       (PlayerManager p) => p.currentMediaStream,
       initialValue: di<PlayerManager>().currentMedia,
       preserveState: false,
+      allowStreamChange: true,
     ).data;
 
     if (media == null) {
@@ -90,7 +93,10 @@ class PlayerTrackInfo extends StatelessWidget with WatchItMixin {
               ],
             ),
           ),
-          if (media is StationMedia) const RadioStationStarButton(),
+          if (media is StationMedia)
+            RadioStationStarButton(currentMedia: media)
+          else if (media is EpisodeMedia)
+            PlayerPodcastFavoriteButton(episodeMedia: media),
         ],
       ),
     );

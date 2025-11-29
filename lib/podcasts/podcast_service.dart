@@ -4,22 +4,15 @@ import 'package:flutter/foundation.dart';
 import 'package:podcast_search/podcast_search.dart';
 
 import '../common/logging.dart';
-import '../extensions/podcast_x.dart';
 import '../extensions/shared_preferences_x.dart';
-import '../player/data/episode_media.dart';
 import '../settings/settings_service.dart';
 import 'data/podcast_genre.dart';
 import 'data/simple_language.dart';
-import 'podcast_library_service.dart';
 
 class PodcastService {
   final SettingsService _settingsService;
-  final PodcastLibraryService _libraryService;
-  PodcastService({
-    required SettingsService settingsService,
-    required PodcastLibraryService libraryService,
-  }) : _settingsService = settingsService,
-       _libraryService = libraryService {
+  PodcastService({required SettingsService settingsService})
+    : _settingsService = settingsService {
     _search = Search(
       searchProvider:
           _settingsService.getBool(SPKeys.usePodcastIndex) == true &&
@@ -76,44 +69,16 @@ class PodcastService {
     }
   }
 
-  // Stateless operation - just fetches podcast and episodes, no caching
-  Future<({Podcast? podcast, List<EpisodeMedia> episodes})> findEpisodes({
-    Item? item,
-    String? feedUrl,
-  }) async {
+  Future<Podcast?> fetchPodcast({Item? item, String? feedUrl}) async {
     if (item == null && item?.feedUrl == null && feedUrl == null) {
-      printMessageInDebugMode('findEpisodes called without feedUrl or item');
-      return (podcast: null, episodes: <EpisodeMedia>[]);
+      return Future.error(
+        ArgumentError('Either item or feedUrl must be provided'),
+      );
     }
 
     final url = feedUrl ?? item!.feedUrl!;
 
-    // Save artwork if available
-    if (item?.bestArtworkUrl != null) {
-      _libraryService.addSubscribedPodcastImage(
-        feedUrl: url,
-        imageUrl: item!.bestArtworkUrl!,
-      );
-    }
-
-    Podcast? podcast;
-    try {
-      podcast = await compute(loadPodcast, url);
-    } catch (e) {
-      printMessageInDebugMode('Error loading podcast feed: $e');
-      return (podcast: null, episodes: <EpisodeMedia>[]);
-    }
-
-    if (podcast?.image != null) {
-      _libraryService.addSubscribedPodcastImage(
-        feedUrl: url,
-        imageUrl: podcast!.image!,
-      );
-    }
-
-    final episodes = podcast?.toEpisodeMediaList(url, item) ?? <EpisodeMedia>[];
-
-    return (podcast: podcast, episodes: episodes);
+    return compute(loadPodcast, url);
   }
 }
 
