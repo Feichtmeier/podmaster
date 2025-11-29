@@ -11,6 +11,7 @@ import '../extensions/podcast_x.dart';
 import '../extensions/string_x.dart';
 import '../notifications/notifications_service.dart';
 import '../player/data/episode_media.dart';
+import '../player/player_manager.dart';
 import '../search/search_manager.dart';
 import 'data/podcast_metadata.dart';
 import 'download_service.dart';
@@ -30,10 +31,12 @@ class PodcastManager {
     required CollectionManager collectionManager,
     required PodcastLibraryService podcastLibraryService,
     required NotificationsService notificationsService,
+    required PlayerManager playerManager,
   }) : _podcastService = podcastService,
        _downloadService = downloadService,
        _podcastLibraryService = podcastLibraryService,
-       _notificationsService = notificationsService {
+       _notificationsService = notificationsService,
+       _playerManager = playerManager {
     Command.globalExceptionHandler = (e, s) {
       printMessageInDebugMode(e.error, s);
     };
@@ -81,6 +84,7 @@ class PodcastManager {
   final PodcastLibraryService _podcastLibraryService;
   final DownloadService _downloadService;
   final NotificationsService _notificationsService;
+  final PlayerManager _playerManager;
 
   final showInfo = ValueNotifier(false);
 
@@ -102,6 +106,25 @@ class PodcastManager {
     _getFetchEpisodesCommand(feedUrl).run(feedUrl);
     return _getFetchEpisodesCommand(feedUrl);
   }
+
+  final Map<String, Command<int, void>> _fetchAndPlayCommands = {};
+  Command<int, void> getFetchEpisodesAndPlayCommand(String feedUrl) {
+    return _fetchAndPlayCommands.putIfAbsent(
+      feedUrl,
+      () => _createFetchEpisodesAndPlayCommand(feedUrl),
+    );
+  }
+
+  Command<int, void> _createFetchEpisodesAndPlayCommand(String feedUrl) =>
+      Command.createAsyncNoResult<int>((startIndex) async {
+        final episodes = await _getFetchEpisodesCommand(
+          feedUrl,
+        ).runAsync(feedUrl);
+
+        if (episodes.isNotEmpty) {
+          await _playerManager.setPlaylist(episodes, index: startIndex);
+        }
+      });
 
   late Command<String?, SearchResult> updateSearchCommand;
   late Command<String?, List<Item>> getSubscribedPodcastsCommand;

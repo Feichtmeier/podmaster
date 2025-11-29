@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_it/flutter_it.dart';
 import 'package:phoenix_theme/phoenix_theme.dart';
 import 'package:podcast_search/podcast_search.dart';
 
@@ -7,11 +8,12 @@ import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../extensions/string_x.dart';
 import '../data/podcast_metadata.dart';
+import '../podcast_manager.dart';
 import 'podcast_card_play_button.dart';
 import 'podcast_favorite_button.dart';
 import 'podcast_page.dart';
 
-class PodcastCard extends StatefulWidget {
+class PodcastCard extends StatefulWidget with WatchItStatefulWidgetMixin {
   const PodcastCard({super.key, required this.podcastItem});
 
   final Item podcastItem;
@@ -25,6 +27,30 @@ class _PodcastCardState extends State<PodcastCard> {
 
   @override
   Widget build(BuildContext context) {
+    final command = createOnce(
+      () => di<PodcastManager>().getFetchEpisodesAndPlayCommand(
+        widget.podcastItem.feedUrl!,
+      ),
+    );
+
+    registerHandler(
+      target: command.results,
+      handler: (context, CommandResult<int, void>? result, cancel) {
+        if (result == null) return;
+        if (result.isRunning) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const PodcastLoadingDialog(),
+          );
+        } else if (result.isSuccess) {
+          Navigator.of(context).pop();
+        } else if (result.hasError) {
+          Navigator.of(context).pop();
+        }
+      },
+    );
+
     final theme = context.theme;
     final isLight = theme.colorScheme.isLight;
     const borderRadiusGeometry = BorderRadiusGeometry.only(
@@ -123,6 +149,26 @@ class _PodcastCardState extends State<PodcastCard> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class PodcastLoadingDialog extends StatelessWidget {
+  const PodcastLoadingDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      constraints: const BoxConstraints(maxWidth: 400, maxHeight: 100),
+      content: Center(
+        child: Column(
+          spacing: kMediumPadding,
+          children: [
+            Text(context.l10n.loadingPodcastFeed),
+            const CircularProgressIndicator.adaptive(),
+          ],
         ),
       ),
     );
