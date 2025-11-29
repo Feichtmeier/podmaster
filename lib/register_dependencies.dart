@@ -14,6 +14,7 @@ import 'collection/collection_manager.dart';
 import 'common/extenal_path_service.dart';
 import 'common/platforms.dart';
 import 'notifications/notifications_service.dart';
+import 'online_art/online_art_model.dart';
 import 'online_art/online_art_service.dart';
 import 'player/player_manager.dart';
 import 'podcasts/download_service.dart';
@@ -50,6 +51,13 @@ void registerDependencies() {
       return wm;
     })
     ..registerSingletonAsync<SharedPreferences>(SharedPreferences.getInstance)
+    ..registerSingletonAsync<SettingsService>(() async {
+      final service = SettingsService(
+        sharedPreferences: di<SharedPreferences>(),
+      );
+      await service.init();
+      return service;
+    }, dependsOn: [SharedPreferences])
     ..registerLazySingleton<VideoController>(() {
       MediaKit.ensureInitialized();
       return VideoController(
@@ -63,6 +71,14 @@ void registerDependencies() {
       dio.options.headers = {HttpHeaders.acceptEncodingHeader: '*'};
       return dio;
     }, dispose: (s) => s.close())
+    ..registerSingletonWithDependencies<DownloadService>(
+      () => DownloadService(
+        libraryService: di<PodcastLibraryService>(),
+        settingsService: di<SettingsService>(),
+        dio: di<Dio>(),
+      ),
+      dependsOn: [SettingsService],
+    )
     ..registerSingletonAsync<PlayerManager>(
       () async => AudioService.init(
         config: AudioServiceConfig(
@@ -80,23 +96,13 @@ void registerDependencies() {
       // dependsOn: [VideoController],
       dispose: (s) async => s.dispose(),
     )
-    ..registerSingletonAsync<SettingsService>(() async {
-      final service = SettingsService(
-        sharedPreferences: di<SharedPreferences>(),
-      );
-      await service.init();
-      return service;
-    }, dependsOn: [SharedPreferences])
     ..registerLazySingleton<NotificationsService>(() => NotificationsService())
     ..registerSingletonWithDependencies<PodcastLibraryService>(
       () => PodcastLibraryService(sharedPreferences: di<SharedPreferences>()),
       dependsOn: [SharedPreferences],
     )
     ..registerSingletonWithDependencies<PodcastService>(
-      () => PodcastService(
-        libraryService: di<PodcastLibraryService>(),
-        settingsService: di<SettingsService>(),
-      ),
+      () => PodcastService(settingsService: di<SettingsService>()),
       dependsOn: [PodcastLibraryService, SettingsService],
     )
     ..registerSingleton<SearchManager>(SearchManager())
@@ -106,9 +112,11 @@ void registerDependencies() {
         searchManager: di<SearchManager>(),
         collectionManager: di<CollectionManager>(),
         podcastLibraryService: di<PodcastLibraryService>(),
+        downloadService: di<DownloadService>(),
         notificationsService: di<NotificationsService>(),
+        playerManager: di<PlayerManager>(),
       ),
-      dependsOn: [PodcastService],
+      dependsOn: [PodcastService, PlayerManager],
     )
     ..registerLazySingleton<ExternalPathService>(
       () => const ExternalPathService(),
@@ -119,12 +127,6 @@ void registerDependencies() {
         externalPathService: di<ExternalPathService>(),
       ),
       dependsOn: [SettingsService],
-    )
-    ..registerLazySingleton<DownloadService>(
-      () => DownloadService(
-        libraryService: di<PodcastLibraryService>(),
-        dio: di<Dio>(),
-      ),
     )
     ..registerSingletonWithDependencies<RadioLibraryService>(
       () => RadioLibraryService(sharedPreferences: di<SharedPreferences>()),
@@ -148,5 +150,8 @@ void registerDependencies() {
         searchManager: di<SearchManager>(),
         collectionManager: di<CollectionManager>(),
       ),
+    )
+    ..registerLazySingleton<OnlineArtModel>(
+      () => OnlineArtModel(onlineArtService: di<OnlineArtService>()),
     );
 }

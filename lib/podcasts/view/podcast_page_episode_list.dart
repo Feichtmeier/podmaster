@@ -1,39 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
-import 'package:podcast_search/podcast_search.dart';
 
 import '../../collection/collection_manager.dart';
 import '../../player/player_manager.dart';
+import '../podcast_library_service.dart';
 import '../podcast_manager.dart';
 import 'episode_tile.dart';
 
 class PodcastPageEpisodeList extends StatelessWidget with WatchItMixin {
-  const PodcastPageEpisodeList({super.key, required this.podcastItem});
+  const PodcastPageEpisodeList({super.key, required this.feedUrl});
 
-  final Item podcastItem;
+  final String feedUrl;
 
   @override
   Widget build(BuildContext context) {
-    final proxy = di<PodcastManager>().getOrCreateProxy(podcastItem);
-
-    callOnceAfterThisBuild((_) => proxy.fetchEpisodesCommand.run());
-
     final downloadsOnly = watchValue(
       (CollectionManager m) => m.showOnlyDownloadsNotifier,
     );
 
-    return watch(proxy.fetchEpisodesCommand.results).value.toWidget(
+    return watchValue(
+      (PodcastManager m) => m.runFetchEpisodesCommand(feedUrl).results,
+    ).toWidget(
       onData: (episodesX, param) {
         final episodes = downloadsOnly
-            ? episodesX.where((e) => e.isDownloaded).toList()
+            ? episodesX
+                  .where(
+                    (e) =>
+                        di<PodcastManager>()
+                            .getDownloadCommand(e)
+                            .progress
+                            .value ==
+                        1.0,
+                  )
+                  .toList()
             : episodesX;
         return SliverList.builder(
           itemCount: episodes.length,
           itemBuilder: (context, index) => EpisodeTile(
             episode: episodes.elementAt(index),
-            podcastImage: podcastItem.bestArtworkUrl,
-            setPlaylist: () =>
-                di<PlayerManager>().setPlaylist(episodes, index: index),
+            podcastImage: episodes.elementAt(index).albumArtUrl,
+            setPlaylist: () => di<PlayerManager>().setPlaylist(
+              episodes.map((e) {
+                if (di<PodcastLibraryService>().getDownload(e.url) != null) {
+                  return e.copyWithX(
+                    resource: di<PodcastLibraryService>().getDownload(e.url)!,
+                  );
+                }
+                return e;
+              }).toList(),
+              index: index,
+            ),
           ),
         );
       },

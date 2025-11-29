@@ -21,6 +21,8 @@ const kPlayerInfoWidth = 180.0;
 
 const kPlayerTrackHeight = 4.0;
 
+const kAudioTrackWidth = 40.0;
+
 const windowOptions = WindowOptions(
   size: Size(1024, 800),
   minimumSize: Size(400, 600),

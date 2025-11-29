@@ -4,20 +4,17 @@ import 'package:podcast_search/podcast_search.dart';
 
 import '../podcast_manager.dart';
 
-class PodcastCardPlayButton extends StatelessWidget {
+class PodcastCardPlayButton extends StatelessWidget with WatchItMixin {
   const PodcastCardPlayButton({super.key, required this.podcastItem});
 
   final Item podcastItem;
 
   @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.small(
-      heroTag: 'podcastcardfap',
-      onPressed: () {
-        final proxy = di<PodcastManager>().getOrCreateProxy(podcastItem);
-        proxy.playEpisodesCommand(0);
-      },
-      child: const Icon(Icons.play_arrow),
-    );
-  }
+  Widget build(BuildContext context) => FloatingActionButton.small(
+    heroTag: 'podcastcardfap',
+    onPressed: () => di<PodcastManager>()
+        .getOrCreatePlayCommand(podcastItem.feedUrl!)
+        .run(0),
+    child: const Icon(Icons.play_arrow),
+  );
 }

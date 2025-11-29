@@ -336,6 +336,7 @@ class RadioService {
     required MpvMetaData mpvMetaData,
   }) {
     _radioHistory.putIfAbsent(icyTitle, () => mpvMetaData);
+    _propertiesChangedController.add(true);
   }
 
   int getRadioHistoryLength({String? filter}) =>
@@ -356,8 +357,8 @@ class RadioService {
     return radioHistory.entries.where(
       (e) => filter == null
           ? true
-          : e.value.icyName.contains(filter) ||
-                filter.contains(e.value.icyName),
+          : e.value.icyName.toLowerCase().contains(filter) ||
+                filter.contains(e.value.icyName.toLowerCase()),
     );
   }
 }

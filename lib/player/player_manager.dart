@@ -7,7 +7,6 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import '../common/logging.dart';
 import '../extensions/color_x.dart';
-import 'data/episode_media.dart';
 import 'data/unique_media.dart';
 import 'view/player_view_state.dart';
 
@@ -235,16 +234,7 @@ class PlayerManager extends BaseAudioHandler with SeekHandler {
   }) async {
     if (mediaList.isEmpty) return;
     updateState(resetRemoteSource: true);
-
-    // Use download path if available for episodes
-    final resolvedList = mediaList.map((media) {
-      if (media is EpisodeMedia && media.downloadPath != null) {
-        return media.copyWithX(resource: media.downloadPath!);
-      }
-      return media;
-    }).toList();
-
-    await _player.open(Playlist(resolvedList, index: index), play: play);
+    await _player.open(Playlist(mediaList, index: index), play: play);
   }
 
   Future<void> addToPlaylist(UniqueMedia media) async => _player.add(media);

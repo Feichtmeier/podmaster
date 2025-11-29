@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_it/flutter_it.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../common/view/tap_able_text.dart';
 import '../../common/view/ui_constants.dart';
 import '../../extensions/build_context_x.dart';
 import '../../player/data/station_media.dart';
@@ -40,7 +42,11 @@ class RadioBrowserTile extends StatelessWidget with WatchItMixin {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    title: Text(media.title),
+    title: TapAbleText(
+      text: media.title,
+      onTap: () =>
+          context.go('/station/${Uri.encodeComponent(media.id)}', extra: media),
+    ),
     selectedColor: context.theme.colorScheme.primary,
     selected:
         watchStream(

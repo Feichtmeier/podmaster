@@ -4,6 +4,7 @@ import 'package:flutter_it/flutter_it.dart';
 import '../extensions/color_x.dart';
 import '../l10n/app_localizations.dart';
 import '../player/player_manager.dart';
+import 'router.dart';
 
 class App extends StatelessWidget with WatchItMixin {
   const App({
@@ -28,7 +29,7 @@ class App extends StatelessWidget with WatchItMixin {
     final playerColor = watchValue(
       (PlayerManager s) => s.playerViewState.select((e) => e.color),
     );
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -47,7 +48,7 @@ class App extends StatelessWidget with WatchItMixin {
               darkTheme?.colorScheme.primary,
         ),
       ),
-      home: child,
+      routerConfig: router,
     );
   }
 }
